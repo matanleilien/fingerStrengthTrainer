@@ -1,0 +1,229 @@
+.workout {
+  min-height: 100dvh;
+  padding: 12px;
+  padding-bottom: 100px;
+  position: relative;
+}
+
+.workout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.btn-icon {
+  background: none;
+  border: 1px solid #444;
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.workout-progress-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.exercise-counter {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.set-counter {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.workout-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #222;
+  border-radius: 2px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.workout-progress-fill {
+  height: 100%;
+  background: #00e676;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.workout-card {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.workout-card.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60dvh;
+}
+
+.workout-card h2 {
+  font-size: 1.3rem;
+  margin-bottom: 4px;
+}
+
+.hold-name {
+  color: #00e676;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.exercise-notes {
+  color: #888;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+}
+
+.warm-up-badge {
+  display: inline-block;
+  background: #ff980033;
+  color: #ff9800;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.info-grid {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin: 16px 0;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.info-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.info-label {
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.instructions-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  text-align: left;
+}
+
+.instructions-list li {
+  padding: 4px 0;
+  padding-left: 16px;
+  position: relative;
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+.instructions-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #555;
+}
+
+.btn-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn-row .btn-primary,
+.btn-row .btn-secondary {
+  flex: 1;
+}
+
+.repeater-info {
+  margin: 8px 0;
+}
+
+.rep-counter {
+  font-size: 1rem;
+  color: #aaa;
+}
+
+.count-exercise {
+  margin: 24px 0;
+}
+
+.count-instruction {
+  font-size: 1.3rem;
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+.exercise-done {
+  margin: 24px 0;
+}
+
+.done-check {
+  font-size: 3rem;
+  color: #00e676;
+  margin-bottom: 12px;
+}
+
+.complete-icon {
+  font-size: 4rem;
+  color: #00e676;
+  width: 80px;
+  height: 80px;
+  border: 3px solid #00e676;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.muted {
+  color: #888;
+}
+
+.pause-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  cursor: pointer;
+}
+
+.pause-content {
+  text-align: center;
+}
+
+.pause-icon {
+  font-size: 4rem;
+}

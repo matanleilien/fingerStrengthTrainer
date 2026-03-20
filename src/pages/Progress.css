@@ -1,0 +1,231 @@
+.progress-page {
+  padding: 16px;
+  padding-bottom: 100px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.progress-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.progress-header h2 {
+  margin: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+.stat-card {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.stat-big {
+  display: block;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #00e676;
+}
+
+.stat-desc {
+  display: block;
+  font-size: 0.7rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.assessment-table {
+  background: #1a1a1a;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  padding: 10px 14px;
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #333;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  padding: 10px 14px;
+  border-bottom: 1px solid #222;
+  font-size: 0.9rem;
+}
+
+.table-row:last-child {
+  border-bottom: none;
+}
+
+.table-row .val {
+  color: #00e676;
+  font-weight: 600;
+}
+
+.trend-chart {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+.trend-chart h4 {
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 12px;
+}
+
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 120px;
+}
+
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.bar {
+  width: 100%;
+  max-width: 40px;
+  background: linear-gradient(to top, #00e676, #00c853);
+  border-radius: 4px 4px 0 0;
+  position: relative;
+  min-height: 4px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.bar-val {
+  position: absolute;
+  top: -20px;
+  font-size: 0.7rem;
+  color: #aaa;
+  white-space: nowrap;
+}
+
+.bar-date {
+  font-size: 0.65rem;
+  color: #666;
+  margin-top: 6px;
+}
+
+.improvement {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+.improvement h4 {
+  font-size: 0.9rem;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.improvement-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #222;
+}
+
+.improvement-row:last-child {
+  border-bottom: none;
+}
+
+.positive {
+  color: #00e676;
+  font-weight: 700;
+}
+
+.negative {
+  color: #f44336;
+  font-weight: 700;
+}
+
+.workout-log {
+  background: #1a1a1a;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.log-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid #222;
+  gap: 12px;
+}
+
+.log-item:last-child {
+  border-bottom: none;
+}
+
+.log-date {
+  font-size: 0.8rem;
+  color: #888;
+  width: 80px;
+}
+
+.log-details {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.log-type {
+  text-transform: capitalize;
+  font-size: 0.9rem;
+}
+
+.log-micro {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #333;
+  color: #aaa;
+  text-transform: capitalize;
+}
+
+.log-intensity {
+  font-size: 0.85rem;
+  color: #00e676;
+  font-weight: 600;
+}
+
+.log-exercises {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
