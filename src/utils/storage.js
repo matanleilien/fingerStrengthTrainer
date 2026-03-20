@@ -87,8 +87,29 @@ export function setNextAssessmentDate(dateStr) {
   set('next_assessment', dateStr);
 }
 
+// --- Failure Adjustments ---
+export function getFailureAdjustments() {
+  return get('failure_adjustments', {});
+}
+
+export function saveFailureAdjustments(adjustments) {
+  set('failure_adjustments', adjustments);
+}
+
+// --- Goals ---
+export function getGoals() {
+  return get('goals', null);
+}
+
+export function saveGoals(goals) {
+  set('goals', goals);
+}
+
 // --- Full Reset ---
 export function resetAllData() {
-  const keys = ['profile', 'assessment', 'assessment_history', 'training_state', 'workout_history', 'next_assessment'];
+  const keys = [
+    'profile', 'assessment', 'assessment_history', 'training_state',
+    'workout_history', 'next_assessment', 'failure_adjustments', 'goals',
+  ];
   keys.forEach(k => remove(k));
 }

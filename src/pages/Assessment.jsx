@@ -10,7 +10,10 @@ import {
   setNextAssessmentDate,
   getUserProfile,
   saveUserProfile,
+  getGoals,
+  saveGoals,
 } from '../utils/storage';
+import { generateGoals, updateGoals } from '../utils/goalGenerator';
 import './Assessment.css';
 
 const assessment = generateAssessment();
@@ -112,8 +115,16 @@ export default function Assessment({ onComplete }) {
     const analyzed = analyzeAssessment(results);
     setAnalysis(analyzed);
 
-    saveAssessmentResults({ raw: results, analyzed });
-    appendAssessmentHistory({ raw: results, analyzed });
+    const assessmentData = { raw: results, analyzed };
+    saveAssessmentResults(assessmentData);
+    appendAssessmentHistory(assessmentData);
+
+    // Generate or update goals
+    const previousGoals = getGoals();
+    const goals = previousGoals
+      ? updateGoals(assessmentData, previousGoals)
+      : generateGoals(assessmentData);
+    saveGoals(goals);
 
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + 14);

@@ -4,6 +4,8 @@ import TimerDisplay from '../components/TimerDisplay';
 import { useTimer } from '../utils/useTimer';
 import { beepGo, beepRest, beepTick, beepWarning, beepComplete } from '../utils/audio';
 import { appendWorkoutHistory } from '../utils/storage';
+import { processWorkoutResults } from '../utils/failureAdjustment';
+import { getHoldById } from '../data/holds';
 import './Workout.css';
 
 export default function Workout({ workout, onComplete, onCancel }) {
@@ -13,6 +15,7 @@ export default function Workout({ workout, onComplete, onCancel }) {
   const [phase, setPhase] = useState('overview');
   const [isPaused, setIsPaused] = useState(false);
   const [completedExercises, setCompletedExercises] = useState([]);
+  const [exerciseResults, setExerciseResults] = useState([]);
 
   const exercises = workout.exercises || [];
   const currentExercise = exercises[exIndex];
@@ -121,10 +124,38 @@ export default function Workout({ workout, onComplete, onCancel }) {
       setPhase('set_rest');
       restTimer.start(Math.round((currentExercise.restTime || 30) * 1.5));
     } else {
+      recordExerciseResult('completed');
       setCompletedExercises(prev => [...prev, exIndex]);
       setPhase('exercise_done');
       beepComplete();
     }
+  }
+
+  function handleFail() {
+    // Stop all timers
+    workTimer.stop();
+    restTimer.stop();
+    countdownTimer.stop();
+    repeaterHangTimer.stop();
+    repeaterRestTimer.stop();
+
+    recordExerciseResult('failed');
+    setPhase('exercise_done');
+    beepRest();
+  }
+
+  function recordExerciseResult(status) {
+    const hold = getHoldById(currentExercise.holdId);
+    setExerciseResults(prev => [...prev, {
+      exIndex,
+      status,
+      holdId: currentExercise.holdId,
+      holdType: hold?.type || 'unknown',
+      hand: currentExercise.hand || null,
+      exerciseId: currentExercise.exercise?.id || 'unknown',
+      failedAtSet: status === 'failed' ? setNum : null,
+      failedAtRep: status === 'failed' ? repNum : null,
+    }]);
   }
 
   function nextRepOrSet() {
@@ -185,18 +216,27 @@ export default function Workout({ workout, onComplete, onCancel }) {
   }
 
   function finishWorkout() {
+    // Record last exercise as completed if we got here from exercise_done
+    const allResults = [...exerciseResults];
+
     appendWorkoutHistory({
       type: workout.type,
       intensity: workout.intensity,
       microCycleDay: workout.microCycleDay,
       exerciseCount: totalExercises,
-      completedCount: completedExercises.length + 1,
+      completedCount: allResults.filter(r => r.status === 'completed').length,
+      failedCount: allResults.filter(r => r.status === 'failed').length,
     });
+
+    // Process failures/successes to adjust future workouts
+    processWorkoutResults(allResults);
+
     setPhase('complete');
     beepComplete();
   }
 
   function skipExercise() {
+    recordExerciseResult('skipped');
     handleNextExercise();
   }
 
@@ -270,10 +310,15 @@ export default function Workout({ workout, onComplete, onCancel }) {
         <p className="hold-name">Hold: {currentExercise.holdName}</p>
         {currentExercise.notes && <p className="exercise-notes">{currentExercise.notes}</p>}
 
-        {/* Warm-up badge */}
-        {currentExercise.isWarmUp && (
-          <span className="warm-up-badge">WARM-UP</span>
-        )}
+        {/* Badges */}
+        <div className="exercise-badges">
+          {currentExercise.isWarmUp && (
+            <span className="warm-up-badge">WARM-UP</span>
+          )}
+          {currentExercise.adjusted && (
+            <span className="adjusted-badge">ADJUSTED</span>
+          )}
+        </div>
 
         {/* Overview phase */}
         {phase === 'overview' && (
@@ -326,12 +371,17 @@ export default function Workout({ workout, onComplete, onCancel }) {
 
         {/* Work phase - timed */}
         {phase === 'work' && currentExercise.hangTime > 0 && currentExercise.exercise?.id !== 'repeaters' && (
-          <TimerDisplay
-            timeLeft={workTimer.timeLeft}
-            totalTime={currentExercise.hangTime}
-            label="HANG"
-            large
-          />
+          <>
+            <TimerDisplay
+              timeLeft={workTimer.timeLeft}
+              totalTime={currentExercise.hangTime}
+              label="HANG"
+              large
+            />
+            <button className="btn-danger btn-fail" onClick={handleFail}>
+              I Failed
+            </button>
+          </>
         )}
 
         {/* Work phase - repeaters */}
@@ -356,6 +406,9 @@ export default function Workout({ workout, onComplete, onCancel }) {
                 large
               />
             )}
+            <button className="btn-danger btn-fail" onClick={handleFail}>
+              I Failed
+            </button>
           </>
         )}
 
@@ -365,9 +418,10 @@ export default function Workout({ workout, onComplete, onCancel }) {
             <p className="count-instruction">
               Do {currentExercise.reps} {currentExercise.exercise?.name || 'reps'}
             </p>
-            <button className="btn-primary" onClick={handlePullUpsDone}>
-              Done
-            </button>
+            <div className="btn-row">
+              <button className="btn-danger" onClick={handleFail}>Failed</button>
+              <button className="btn-primary" onClick={handlePullUpsDone}>Done</button>
+            </div>
           </div>
         )}
 
@@ -394,15 +448,21 @@ export default function Workout({ workout, onComplete, onCancel }) {
         )}
 
         {/* Exercise done */}
-        {phase === 'exercise_done' && (
-          <div className="exercise-done">
-            <div className="done-check">&#10003;</div>
-            <p>Exercise complete!</p>
-            <button className="btn-primary" onClick={handleNextExercise}>
-              {exIndex + 1 >= totalExercises ? 'Finish Workout' : 'Next Exercise'}
-            </button>
-          </div>
-        )}
+        {phase === 'exercise_done' && (() => {
+          const lastResult = exerciseResults[exerciseResults.length - 1];
+          const wasFailed = lastResult?.status === 'failed';
+          return (
+            <div className="exercise-done">
+              <div className={wasFailed ? 'done-fail' : 'done-check'}>
+                {wasFailed ? '!' : '\u2713'}
+              </div>
+              <p>{wasFailed ? 'Exercise failed — noted for plan adjustment' : 'Exercise complete!'}</p>
+              <button className="btn-primary" onClick={handleNextExercise}>
+                {exIndex + 1 >= totalExercises ? 'Finish Workout' : 'Next Exercise'}
+              </button>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Pause overlay */}

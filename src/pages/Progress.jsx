@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
-import { getAssessmentHistory, getWorkoutHistory } from '../utils/storage';
+import { getAssessmentHistory, getWorkoutHistory, getGoals } from '../utils/storage';
+import { getProgressPercent, getSkillStatus } from '../utils/goalGenerator';
 import './Progress.css';
 
 export default function Progress({ onBack }) {
   const assessmentHistory = getAssessmentHistory();
   const workoutHistory = getWorkoutHistory();
+  const goals = getGoals();
 
   const stats = useMemo(() => {
     if (!workoutHistory?.length) return null;
@@ -60,6 +62,75 @@ export default function Progress({ onBack }) {
               <span className="stat-big">{stats.avgIntensity}%</span>
               <span className="stat-desc">Avg Intensity</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Goals & Expected Progress */}
+      {goals && Object.keys(goals.skills).length > 0 && (
+        <div className="section">
+          <h3>Goals & Expected Progress</h3>
+          <p className="goals-note">Conservative targets: ~5% improvement per 2-week cycle</p>
+          <div className="goals-detail-list">
+            {Object.entries(goals.skills).map(([key, skill]) => {
+              const pct = skill.lowerIsBetter
+                ? (skill.baseline > skill.target8Week
+                  ? getProgressPercent(skill.baseline - skill.current + skill.baseline, skill.baseline, skill.baseline + (skill.baseline - skill.target8Week))
+                  : 0)
+                : getProgressPercent(skill.current, skill.baseline, skill.target8Week);
+              const status = getSkillStatus(skill);
+              return (
+                <div key={key} className="goal-detail-card">
+                  <div className="goal-detail-header">
+                    <span className="goal-detail-label">{skill.label}</span>
+                    <span className="goal-detail-status" style={{ color: status.color }}>
+                      {status.label}
+                    </span>
+                  </div>
+
+                  {/* Progress bar with milestones */}
+                  <div className="goal-detail-bar-track">
+                    <div className="goal-detail-bar-fill" style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
+                    {/* Milestone markers */}
+                    <div className="milestone" style={{ left: `${getProgressPercent(skill.target2Week, skill.baseline, skill.target8Week)}%` }}>
+                      <span className="milestone-label">2w</span>
+                    </div>
+                    <div className="milestone" style={{ left: `${getProgressPercent(skill.target4Week, skill.baseline, skill.target8Week)}%` }}>
+                      <span className="milestone-label">4w</span>
+                    </div>
+                  </div>
+
+                  {/* Timeline values */}
+                  <div className="goal-timeline">
+                    <div className="timeline-point">
+                      <span className="tp-value">{skill.baseline}{skill.unit === 'seconds' ? 's' : skill.unit === '%' ? '%' : ''}</span>
+                      <span className="tp-label">Baseline</span>
+                    </div>
+                    <span className="timeline-arrow">&rarr;</span>
+                    <div className="timeline-point">
+                      <span className="tp-value">{Math.round(skill.target2Week)}{skill.unit === 'seconds' ? 's' : skill.unit === '%' ? '%' : ''}</span>
+                      <span className="tp-label">2 weeks</span>
+                    </div>
+                    <span className="timeline-arrow">&rarr;</span>
+                    <div className="timeline-point">
+                      <span className="tp-value">{Math.round(skill.target4Week)}{skill.unit === 'seconds' ? 's' : skill.unit === '%' ? '%' : ''}</span>
+                      <span className="tp-label">4 weeks</span>
+                    </div>
+                    <span className="timeline-arrow">&rarr;</span>
+                    <div className="timeline-point highlight">
+                      <span className="tp-value">{Math.round(skill.target8Week)}{skill.unit === 'seconds' ? 's' : skill.unit === '%' ? '%' : ''}</span>
+                      <span className="tp-label">8 weeks</span>
+                    </div>
+                  </div>
+
+                  <div className="goal-current">
+                    Current: <strong>{skill.current}{skill.unit === 'seconds' ? 's' : skill.unit === '%' ? '%' : ''}</strong>
+                    {' '}({Math.round(pct)}% toward 8-week goal)
+                    {skill.rate && <span className="rate-badge">+{Math.round(skill.rate * 100)}%/cycle</span>}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

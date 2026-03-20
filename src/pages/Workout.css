@@ -89,6 +89,13 @@
   margin-bottom: 12px;
 }
 
+.exercise-badges {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
 .warm-up-badge {
   display: inline-block;
   background: #ff980033;
@@ -98,7 +105,42 @@
   padding: 3px 10px;
   border-radius: 20px;
   letter-spacing: 1px;
-  margin-bottom: 12px;
+}
+
+.adjusted-badge {
+  display: inline-block;
+  background: #f4433633;
+  color: #f44336;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+}
+
+.btn-fail {
+  margin-top: 12px;
+  opacity: 0.7;
+  font-size: 0.95rem;
+  padding: 12px;
+}
+
+.btn-fail:hover {
+  opacity: 1;
+}
+
+.done-fail {
+  font-size: 3rem;
+  color: #f44336;
+  width: 64px;
+  height: 64px;
+  border: 3px solid #f44336;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  font-weight: 700;
 }
 
 .info-grid {

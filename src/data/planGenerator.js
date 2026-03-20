@@ -2,6 +2,7 @@
 import { HOLDS, getHoldsByDifficultyRange, getHoldById } from './holds';
 import { EXERCISES, getExercisesForLevel } from './exercises';
 import { CYCLE_CONFIG, getCycleIntensity } from './periodization';
+import { applyAdjustmentToExercise } from '../utils/failureAdjustment';
 
 const LEVELS = {
   1: { name: 'Beginner', maxHoldDifficulty: 4, baseHangTime: 10, baseReps: 3 },
@@ -11,7 +12,7 @@ const LEVELS = {
 
 export { LEVELS };
 
-export function generateWorkout(userProfile, cycleInfo, assessmentResults) {
+export function generateWorkout(userProfile, cycleInfo, assessmentResults, failureAdjustments = null) {
   const { level, daysPerWeek } = userProfile;
   const { cycle, config, microCycleDay } = cycleInfo;
   const levelConfig = LEVELS[level] || LEVELS[1];
@@ -49,15 +50,20 @@ export function generateWorkout(userProfile, cycleInfo, assessmentResults) {
   // Expand one-handed holds into separate L/R exercises
   const expandedExercises = expandOneHandedExercises(exercises);
 
+  // Apply failure adjustments to reduce difficulty where user has struggled
+  const adjustedExercises = failureAdjustments
+    ? expandedExercises.map(ex => applyAdjustmentToExercise(ex, failureAdjustments))
+    : expandedExercises;
+
   return {
     type: cycle,
     microCycleDay,
     intensity: Math.round(intensity * 100),
     warmUpMinutes: 15,
     coolDownMinutes: 15,
-    exercises: expandedExercises,
-    totalSets: expandedExercises.reduce((sum, e) => sum + (e.sets || 1), 0),
-    estimatedMinutes: estimateWorkoutDuration(expandedExercises),
+    exercises: adjustedExercises,
+    totalSets: adjustedExercises.reduce((sum, e) => sum + (e.sets || 1), 0),
+    estimatedMinutes: estimateWorkoutDuration(adjustedExercises),
   };
 }
 

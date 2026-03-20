@@ -8,7 +8,10 @@ import {
   getTrainingState,
   getNextAssessmentDate,
   getWorkoutHistory,
+  getFailureAdjustments,
+  getGoals,
 } from '../utils/storage';
+import { getProgressPercent, getSkillStatus } from '../utils/goalGenerator';
 import './Dashboard.css';
 
 export default function Dashboard({ onStartWorkout, onStartAssessment, onViewProgress, onReset }) {
@@ -17,6 +20,8 @@ export default function Dashboard({ onStartWorkout, onStartAssessment, onViewPro
   const trainingState = getTrainingState();
   const nextAssessment = getNextAssessmentDate();
   const history = getWorkoutHistory();
+  const failureAdj = getFailureAdjustments();
+  const goals = getGoals();
 
   const cycleInfo = useMemo(() => {
     if (!trainingState?.startDate) return null;
@@ -25,12 +30,18 @@ export default function Dashboard({ onStartWorkout, onStartAssessment, onViewPro
 
   const workout = useMemo(() => {
     if (!profile || !cycleInfo) return null;
-    return generateWorkout(profile, cycleInfo, assessmentResults?.analyzed);
-  }, [profile, cycleInfo, assessmentResults]);
+    return generateWorkout(profile, cycleInfo, assessmentResults?.analyzed, failureAdj);
+  }, [profile, cycleInfo, assessmentResults, failureAdj]);
 
   const isAssessmentDue = useMemo(() => {
     if (!nextAssessment) return true;
     return new Date() >= new Date(nextAssessment);
+  }, [nextAssessment]);
+
+  const daysUntilAssessment = useMemo(() => {
+    if (!nextAssessment) return 0;
+    const diff = new Date(nextAssessment) - new Date();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
   }, [nextAssessment]);
 
   const levelName = LEVELS[profile?.level]?.name || 'Unknown';
@@ -90,6 +101,44 @@ export default function Dashboard({ onStartWorkout, onStartAssessment, onViewPro
         </div>
       )}
 
+      {/* Goals at a glance */}
+      {goals && Object.keys(goals.skills).length > 0 && (
+        <div className="section">
+          <h3>Goals</h3>
+          {!isAssessmentDue && (
+            <p className="goals-subtitle">
+              Next assessment in {daysUntilAssessment} days — expect ~5% improvement per cycle
+            </p>
+          )}
+          <div className="goals-list">
+            {Object.entries(goals.skills).slice(0, 5).map(([key, skill]) => {
+              const pct = skill.lowerIsBetter
+                ? getProgressPercent(skill.baseline - skill.current + skill.baseline, skill.baseline, skill.baseline + (skill.baseline - skill.target8Week))
+                : getProgressPercent(skill.current, skill.baseline, skill.target8Week);
+              const status = getSkillStatus(skill);
+              return (
+                <div key={key} className="goal-row">
+                  <div className="goal-header">
+                    <span className="goal-label">{skill.label}</span>
+                    <span className="goal-status" style={{ color: status.color }}>{status.label}</span>
+                  </div>
+                  <div className="goal-bar-track">
+                    <div className="goal-marker goal-2w" style={{ left: `${getProgressPercent(skill.target2Week, skill.baseline, skill.target8Week)}%` }} />
+                    <div className="goal-marker goal-4w" style={{ left: `${getProgressPercent(skill.target4Week, skill.baseline, skill.target8Week)}%` }} />
+                    <div className="goal-bar-fill" style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
+                  </div>
+                  <div className="goal-values">
+                    <span>{skill.current}{skill.unit === 'seconds' ? 's' : skill.unit === '%' ? '%' : ''}</span>
+                    <span className="goal-target">Target: {Math.round(skill.target8Week)}{skill.unit === 'seconds' ? 's' : skill.unit === '%' ? '%' : ''}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <button className="btn-text" onClick={onViewProgress}>See all goals &rarr;</button>
+        </div>
+      )}
+
       {/* Today's workout */}
       <div className="section">
         <h3>Today's Workout</h3>
@@ -123,11 +172,13 @@ export default function Dashboard({ onStartWorkout, onStartAssessment, onViewPro
                 <div key={i} className="exercise-item">
                   <span className="exercise-name">
                     {ex.isWarmUp && '🔥 '}
+                    {ex.adjusted && '↓ '}
                     {ex.exercise?.name || 'Exercise'}
                   </span>
                   <span className="exercise-detail">
                     {ex.holdName} — {ex.sets}x
                     {ex.hangTime > 0 ? `${ex.hangTime}s` : `${ex.reps} reps`}
+                    {ex.adjusted && ' (adjusted)'}
                   </span>
                 </div>
               ))}
