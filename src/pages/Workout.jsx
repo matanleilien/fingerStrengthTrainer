@@ -261,6 +261,7 @@ export default function Workout({ workout, onComplete, onCancel }) {
       <Fingerboard
         activeHoldIds={phase === 'rest' || phase === 'set_rest' ? [] : [currentExercise.holdId]}
         highlightColor={phase === 'work' ? '#00e676' : '#ffab00'}
+        activeHand={currentExercise.hand || null}
       />
 
       {/* Exercise info */}

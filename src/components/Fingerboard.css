@@ -53,3 +53,8 @@
   pointer-events: none;
   z-index: 2;
 }
+
+.hand-badge {
+  color: #ffab00;
+  font-weight: 700;
+}

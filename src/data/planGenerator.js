@@ -1,5 +1,5 @@
 // Generates workout plans based on assessment results, current cycle, and user level
-import { HOLDS, getHoldsByDifficultyRange } from './holds';
+import { HOLDS, getHoldsByDifficultyRange, getHoldById } from './holds';
 import { EXERCISES, getExercisesForLevel } from './exercises';
 import { CYCLE_CONFIG, getCycleIntensity } from './periodization';
 
@@ -46,16 +46,44 @@ export function generateWorkout(userProfile, cycleInfo, assessmentResults) {
     hangTime, restTime, reps, intensity, level
   );
 
+  // Expand one-handed holds into separate L/R exercises
+  const expandedExercises = expandOneHandedExercises(exercises);
+
   return {
     type: cycle,
     microCycleDay,
     intensity: Math.round(intensity * 100),
     warmUpMinutes: 15,
     coolDownMinutes: 15,
-    exercises,
-    totalSets: exercises.reduce((sum, e) => sum + (e.sets || 1), 0),
-    estimatedMinutes: estimateWorkoutDuration(exercises),
+    exercises: expandedExercises,
+    totalSets: expandedExercises.reduce((sum, e) => sum + (e.sets || 1), 0),
+    estimatedMinutes: estimateWorkoutDuration(expandedExercises),
   };
+}
+
+// For one-handed holds, duplicate the exercise: once for right hand, once for left
+function expandOneHandedExercises(exercises) {
+  const expanded = [];
+  for (const ex of exercises) {
+    const hold = getHoldById(ex.holdId);
+    if (hold?.oneHanded) {
+      expanded.push({
+        ...ex,
+        hand: 'right',
+        holdName: `${ex.holdName} (R)`,
+        notes: ex.notes ? `${ex.notes} — RIGHT hand` : 'RIGHT hand',
+      });
+      expanded.push({
+        ...ex,
+        hand: 'left',
+        holdName: `${ex.holdName} (L)`,
+        notes: ex.notes ? `${ex.notes} — LEFT hand` : 'LEFT hand',
+      });
+    } else {
+      expanded.push({ ...ex, hand: null });
+    }
+  }
+  return expanded;
 }
 
 function selectHoldsForWorkout(holds, intensity, level) {
@@ -329,26 +357,49 @@ export function generateAssessment() {
         hangTime: 7,
         restTime: 3,
       },
+      // One-handed tests — 2-finger pocket, R then L
+      {
+        id: 'max_hang_pocket_2f_r',
+        name: 'Max Hang — 2-Finger Pocket (Right)',
+        exercise: { id: 'dead_hang', name: 'Dead Hang' },
+        holdId: 9,
+        holdName: 'Large 2-Finger Pocket',
+        hand: 'right',
+        oneHanded: true,
+        description: 'Hang as long as you can with your RIGHT hand on the 2-finger pocket.',
+        metric: 'time',
+        unit: 'seconds',
+      },
+      {
+        id: 'max_hang_pocket_2f_l',
+        name: 'Max Hang — 2-Finger Pocket (Left)',
+        exercise: { id: 'dead_hang', name: 'Dead Hang' },
+        holdId: 9,
+        holdName: 'Large 2-Finger Pocket',
+        hand: 'left',
+        oneHanded: true,
+        description: 'Hang as long as you can with your LEFT hand on the 2-finger pocket.',
+        metric: 'time',
+        unit: 'seconds',
+      },
     ],
   };
 }
 
 export function analyzeAssessment(results) {
-  // results: { max_hang_jug: seconds, max_hang_edge: seconds, max_hang_pocket: seconds,
-  //            repeater_test: reps, repeater_test_edge: reps }
-
   const jugHang = results.max_hang_jug || 0;
   const edgeHang = results.max_hang_edge || 0;
   const pocketHang = results.max_hang_pocket || 0;
   const jugRepeaters = results.repeater_test || 0;
   const edgeRepeaters = results.repeater_test_edge || 0;
+  const pocket2fR = results.max_hang_pocket_2f_r || 0;
+  const pocket2fL = results.max_hang_pocket_2f_l || 0;
 
-  // Auto-detect level from assessment
   let suggestedLevel = 1;
   if (edgeHang >= 20 && jugRepeaters >= 8) {
-    suggestedLevel = 3; // Advanced
+    suggestedLevel = 3;
   } else if (edgeHang >= 10 && jugRepeaters >= 5) {
-    suggestedLevel = 2; // Intermediate
+    suggestedLevel = 2;
   }
 
   return {
@@ -359,17 +410,27 @@ export function analyzeAssessment(results) {
       jugs: jugHang,
       edges: edgeHang,
       pockets: pocketHang,
+      'pocket R': pocket2fR,
+      'pocket L': pocket2fL,
     },
     staminaProfile: {
       jugs: jugRepeaters,
       edges: edgeRepeaters,
     },
+    handBalance: {
+      right: pocket2fR,
+      left: pocket2fL,
+      imbalance: pocket2fR > 0 && pocket2fL > 0
+        ? Math.round(Math.abs(pocket2fR - pocket2fL) / Math.max(pocket2fR, pocket2fL) * 100)
+        : 0,
+      weakerHand: pocket2fR < pocket2fL ? 'right' : pocket2fL < pocket2fR ? 'left' : 'equal',
+    },
     suggestedLevel,
-    weaknesses: identifyWeaknesses(jugHang, edgeHang, pocketHang, jugRepeaters, edgeRepeaters),
+    weaknesses: identifyWeaknesses(jugHang, edgeHang, pocketHang, jugRepeaters, edgeRepeaters, pocket2fR, pocket2fL),
   };
 }
 
-function identifyWeaknesses(jugHang, edgeHang, pocketHang, jugRep, edgeRep) {
+function identifyWeaknesses(jugHang, edgeHang, pocketHang, jugRep, edgeRep, pocket2fR, pocket2fL) {
   const weaknesses = [];
   const avg = (jugHang + edgeHang + pocketHang) / 3;
 
@@ -377,6 +438,15 @@ function identifyWeaknesses(jugHang, edgeHang, pocketHang, jugRep, edgeRep) {
   if (pocketHang < avg * 0.7) weaknesses.push('Pocket strength needs work');
   if (jugRep < 5) weaknesses.push('General stamina needs improvement');
   if (edgeRep < jugRep * 0.5) weaknesses.push('Edge endurance is lagging');
+
+  // Hand imbalance detection
+  if (pocket2fR > 0 && pocket2fL > 0) {
+    const imbalance = Math.abs(pocket2fR - pocket2fL) / Math.max(pocket2fR, pocket2fL);
+    if (imbalance > 0.2) {
+      const weaker = pocket2fR < pocket2fL ? 'Right' : 'Left';
+      weaknesses.push(`${weaker} hand is ${Math.round(imbalance * 100)}% weaker — focus on balancing`);
+    }
+  }
 
   return weaknesses;
 }

@@ -242,6 +242,13 @@
   flex: 1;
 }
 
+.imbalance-note {
+  color: #ff9800;
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 8px;
+}
+
 .rest-note {
   text-align: center;
   color: #888;

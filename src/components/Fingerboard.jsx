@@ -1,7 +1,8 @@
 import { HOLDS } from '../data/holds';
 import './Fingerboard.css';
 
-export default function Fingerboard({ activeHoldIds = [], highlightColor = '#00e676' }) {
+// activeHand: null = both sides highlighted, 'left' = index 0 only, 'right' = index 1 only
+export default function Fingerboard({ activeHoldIds = [], highlightColor = '#00e676', activeHand = null }) {
   return (
     <div className="fingerboard-container">
       <div className="fingerboard-wrapper">
@@ -15,6 +16,12 @@ export default function Fingerboard({ activeHoldIds = [], highlightColor = '#00e
           {HOLDS.map(hold =>
             hold.positions.map((pos, i) => {
               const isActive = activeHoldIds.includes(hold.id);
+              // For one-handed holds, only highlight the relevant side
+              const isHandMatch = !activeHand
+                || hold.positions.length === 1
+                || (activeHand === 'left' && i === 0)
+                || (activeHand === 'right' && i === 1);
+              const show = isActive && isHandMatch;
               return (
                 <rect
                   key={`${hold.id}-${i}`}
@@ -24,8 +31,8 @@ export default function Fingerboard({ activeHoldIds = [], highlightColor = '#00e
                   height={pos.h}
                   rx={1.5}
                   ry={1.5}
-                  className={`hold-rect ${isActive ? 'active' : ''}`}
-                  style={isActive ? {
+                  className={`hold-rect ${show ? 'active' : ''}`}
+                  style={show ? {
                     fill: highlightColor,
                     fillOpacity: 0.35,
                     stroke: highlightColor,
@@ -38,18 +45,32 @@ export default function Fingerboard({ activeHoldIds = [], highlightColor = '#00e
           )}
         </svg>
         {/* Hold labels */}
-        {activeHoldIds.length > 0 && HOLDS.filter(h => activeHoldIds.includes(h.id)).map(hold => (
-          <div
-            key={`label-${hold.id}`}
-            className="hold-label"
-            style={{
-              left: `${hold.positions[0].x}%`,
-              top: `${hold.positions[0].y + hold.positions[0].h / 2 + 2}%`,
-            }}
-          >
-            {hold.name}
-          </div>
-        ))}
+        {activeHoldIds.length > 0 && HOLDS.filter(h => activeHoldIds.includes(h.id)).map(hold => {
+          // Position label near the active side for one-handed holds
+          let labelPos;
+          if (activeHand === 'right' && hold.positions.length > 1) {
+            labelPos = hold.positions[1];
+          } else {
+            labelPos = hold.positions[0];
+          }
+          return (
+            <div
+              key={`label-${hold.id}`}
+              className="hold-label"
+              style={{
+                left: `${labelPos.x}%`,
+                top: `${labelPos.y + labelPos.h / 2 + 1}%`,
+              }}
+            >
+              {hold.name}
+              {activeHand && hold.oneHanded && (
+                <span className="hand-badge">
+                  {activeHand === 'left' ? ' (L)' : ' (R)'}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

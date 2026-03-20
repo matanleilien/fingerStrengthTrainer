@@ -171,6 +171,39 @@ export default function Assessment({ onComplete }) {
             ))}
           </div>
 
+          {analysis.handBalance && analysis.handBalance.right > 0 && (
+            <>
+              <h3>Hand Balance</h3>
+              <div className="profile-bars">
+                <div className="bar-row">
+                  <span className="bar-label">Right</span>
+                  <div className="bar-track">
+                    <div className="bar-fill" style={{
+                      width: `${Math.min(100, (analysis.handBalance.right / Math.max(analysis.handBalance.right, analysis.handBalance.left, 1)) * 100)}%`,
+                      background: analysis.handBalance.weakerHand === 'right' ? '#ff9800' : '#00e676',
+                    }} />
+                  </div>
+                  <span className="bar-value">{analysis.handBalance.right}s</span>
+                </div>
+                <div className="bar-row">
+                  <span className="bar-label">Left</span>
+                  <div className="bar-track">
+                    <div className="bar-fill" style={{
+                      width: `${Math.min(100, (analysis.handBalance.left / Math.max(analysis.handBalance.right, analysis.handBalance.left, 1)) * 100)}%`,
+                      background: analysis.handBalance.weakerHand === 'left' ? '#ff9800' : '#00e676',
+                    }} />
+                  </div>
+                  <span className="bar-value">{analysis.handBalance.left}s</span>
+                </div>
+              </div>
+              {analysis.handBalance.imbalance > 10 && (
+                <p className="imbalance-note">
+                  {analysis.handBalance.imbalance}% imbalance — {analysis.handBalance.weakerHand} hand is weaker
+                </p>
+              )}
+            </>
+          )}
+
           {analysis.weaknesses.length > 0 && (
             <>
               <h3>Areas to Improve</h3>
@@ -219,7 +252,7 @@ export default function Assessment({ onComplete }) {
         </div>
       </div>
 
-      <Fingerboard activeHoldIds={[currentTest.holdId]} />
+      <Fingerboard activeHoldIds={[currentTest.holdId]} activeHand={currentTest.hand || null} />
 
       <div className="assessment-card">
         <h2>{currentTest.name}</h2>

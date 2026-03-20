@@ -33,6 +33,8 @@ export const DIFFICULTY_ORDER = [
 
 // Hold definitions with positions for overlay highlighting
 // x, y are center percentages; w, h are size percentages of the image
+// oneHanded: true means each side is a single-hand hold — train L and R separately
+// positions[0] = left side, positions[1] = right side (when paired)
 export const HOLDS = [
   {
     id: 1,
@@ -40,10 +42,11 @@ export const HOLDS = [
     type: HOLD_TYPES.JUG,
     fingers: 4,
     difficulty: 1,
+    oneHanded: false,
     description: 'Large jug rail — easiest hold on the board',
     positions: [
-      { x: 5.5, y: 18, w: 7, h: 10 },   // left
-      { x: 94.5, y: 18, w: 7, h: 10 },   // right
+      { x: 4, y: 20, w: 8, h: 14 },    // left
+      { x: 96, y: 20, w: 8, h: 14 },   // right
     ],
   },
   {
@@ -52,10 +55,11 @@ export const HOLDS = [
     type: HOLD_TYPES.LARGE_EDGE,
     fingers: 4,
     difficulty: 3,
+    oneHanded: false,
     description: 'Wide, incut edge — good for 4-finger open hand',
     positions: [
-      { x: 17, y: 14, w: 8, h: 8 },
-      { x: 83, y: 14, w: 8, h: 8 },
+      { x: 16, y: 16, w: 9, h: 12 },
+      { x: 84, y: 16, w: 9, h: 12 },
     ],
   },
   {
@@ -64,10 +68,11 @@ export const HOLDS = [
     type: HOLD_TYPES.SLOPER,
     fingers: 4,
     difficulty: 4,
+    oneHanded: false,
     description: 'Rounded sloper — requires open-hand technique',
     positions: [
-      { x: 28, y: 10, w: 8, h: 9 },
-      { x: 72, y: 10, w: 8, h: 9 },
+      { x: 27, y: 13, w: 9, h: 13 },
+      { x: 73, y: 13, w: 9, h: 13 },
     ],
   },
   {
@@ -76,10 +81,11 @@ export const HOLDS = [
     type: HOLD_TYPES.LARGE_EDGE,
     fingers: 4,
     difficulty: 3,
+    oneHanded: false,
     description: 'Large 4-finger incut edge',
     positions: [
-      { x: 8, y: 34, w: 7.5, h: 8 },
-      { x: 92, y: 34, w: 7.5, h: 8 },
+      { x: 7, y: 37, w: 8, h: 12 },
+      { x: 93, y: 37, w: 8, h: 12 },
     ],
   },
   {
@@ -88,10 +94,11 @@ export const HOLDS = [
     type: HOLD_TYPES.MEDIUM_EDGE,
     fingers: 4,
     difficulty: 5,
+    oneHanded: false,
     description: 'Medium 4-finger edge',
     positions: [
-      { x: 16.5, y: 34, w: 7.5, h: 8 },
-      { x: 83.5, y: 34, w: 7.5, h: 8 },
+      { x: 16, y: 37, w: 8, h: 12 },
+      { x: 84, y: 37, w: 8, h: 12 },
     ],
   },
   {
@@ -100,10 +107,11 @@ export const HOLDS = [
     type: HOLD_TYPES.SMALL_EDGE,
     fingers: 4,
     difficulty: 7,
+    oneHanded: false,
     description: 'Small 4-finger edge — advanced',
     positions: [
-      { x: 25.5, y: 34, w: 7, h: 8 },
-      { x: 74.5, y: 34, w: 7, h: 8 },
+      { x: 25, y: 37, w: 7.5, h: 12 },
+      { x: 75, y: 37, w: 7.5, h: 12 },
     ],
   },
   {
@@ -112,10 +120,11 @@ export const HOLDS = [
     type: HOLD_TYPES.LARGE_POCKET_3F,
     fingers: 3,
     difficulty: 4,
+    oneHanded: false,
     description: 'Large 3-finger pocket',
     positions: [
-      { x: 33.5, y: 34, w: 6.5, h: 8 },
-      { x: 66.5, y: 34, w: 6.5, h: 8 },
+      { x: 34, y: 37, w: 7, h: 12 },
+      { x: 66, y: 37, w: 7, h: 12 },
     ],
   },
   {
@@ -124,10 +133,11 @@ export const HOLDS = [
     type: HOLD_TYPES.SMALL_POCKET_3F,
     fingers: 3,
     difficulty: 6,
-    description: 'Medium 3-finger pocket',
+    oneHanded: true,
+    description: 'Medium 3-finger pocket — one hand at a time',
     positions: [
-      { x: 8, y: 52, w: 7.5, h: 8 },
-      { x: 92, y: 52, w: 7.5, h: 8 },
+      { x: 7, y: 56, w: 8, h: 12 },
+      { x: 93, y: 56, w: 8, h: 12 },
     ],
   },
   {
@@ -136,10 +146,11 @@ export const HOLDS = [
     type: HOLD_TYPES.LARGE_POCKET_2F,
     fingers: 2,
     difficulty: 6,
-    description: 'Large 2-finger pocket',
+    oneHanded: true,
+    description: 'Large 2-finger pocket — one hand at a time',
     positions: [
-      { x: 17, y: 52, w: 7, h: 8 },
-      { x: 83, y: 52, w: 7, h: 8 },
+      { x: 16, y: 56, w: 7.5, h: 12 },
+      { x: 84, y: 56, w: 7.5, h: 12 },
     ],
   },
   {
@@ -148,10 +159,11 @@ export const HOLDS = [
     type: HOLD_TYPES.SMALL_POCKET_2F,
     fingers: 2,
     difficulty: 8,
-    description: 'Small 2-finger pocket — advanced',
+    oneHanded: true,
+    description: 'Small 2-finger pocket — one hand, advanced',
     positions: [
-      { x: 25.5, y: 52, w: 6.5, h: 8 },
-      { x: 74.5, y: 52, w: 6.5, h: 8 },
+      { x: 25, y: 56, w: 7, h: 12 },
+      { x: 75, y: 56, w: 7, h: 12 },
     ],
   },
   {
@@ -160,10 +172,11 @@ export const HOLDS = [
     type: HOLD_TYPES.LARGE_POCKET_1F,
     fingers: 1,
     difficulty: 9,
-    description: 'Large mono pocket — expert only',
+    oneHanded: true,
+    description: 'Large mono pocket — one hand, expert only',
     positions: [
-      { x: 8, y: 70, w: 7, h: 8 },
-      { x: 92, y: 70, w: 7, h: 8 },
+      { x: 7, y: 74, w: 8, h: 12 },
+      { x: 93, y: 74, w: 8, h: 12 },
     ],
   },
   {
@@ -172,22 +185,24 @@ export const HOLDS = [
     type: HOLD_TYPES.SMALL_POCKET_1F,
     fingers: 1,
     difficulty: 10,
-    description: 'Small mono pocket — expert only, high injury risk',
+    oneHanded: true,
+    description: 'Small mono pocket — one hand, expert only, high injury risk',
     positions: [
-      { x: 17, y: 70, w: 6.5, h: 8 },
-      { x: 83, y: 70, w: 6.5, h: 8 },
+      { x: 16, y: 74, w: 7.5, h: 12 },
+      { x: 84, y: 74, w: 7.5, h: 12 },
     ],
   },
   {
     id: 13,
-    name: 'Medium Edge (Center)',
+    name: 'Medium Edge (Outer)',
     type: HOLD_TYPES.MEDIUM_EDGE,
     fingers: 4,
     difficulty: 5,
-    description: 'Medium edge — center bottom',
+    oneHanded: true,
+    description: 'Medium edge — outer bottom, one hand at a time',
     positions: [
-      { x: 25.5, y: 70, w: 6.5, h: 8 },
-      { x: 74.5, y: 70, w: 6.5, h: 8 },
+      { x: 25, y: 74, w: 7, h: 12 },
+      { x: 75, y: 74, w: 7, h: 12 },
     ],
   },
   {
@@ -196,9 +211,10 @@ export const HOLDS = [
     type: HOLD_TYPES.JUG,
     fingers: 4,
     difficulty: 1,
+    oneHanded: false,
     description: 'Large jug at top center — easiest hold',
     positions: [
-      { x: 50, y: 4, w: 10, h: 10 },
+      { x: 50, y: 6, w: 12, h: 12 },
     ],
   },
   {
@@ -207,9 +223,10 @@ export const HOLDS = [
     type: HOLD_TYPES.SLOPER,
     fingers: 4,
     difficulty: 4,
+    oneHanded: false,
     description: 'Sloper — center of board',
     positions: [
-      { x: 50, y: 14, w: 8, h: 8 },
+      { x: 50, y: 16, w: 9, h: 12 },
     ],
   },
   {
@@ -218,9 +235,10 @@ export const HOLDS = [
     type: HOLD_TYPES.MEDIUM_EDGE,
     fingers: 4,
     difficulty: 5,
+    oneHanded: false,
     description: 'Medium edge — center of board',
     positions: [
-      { x: 50, y: 34, w: 7, h: 8 },
+      { x: 50, y: 37, w: 8, h: 12 },
     ],
   },
   {
@@ -229,9 +247,10 @@ export const HOLDS = [
     type: HOLD_TYPES.LARGE_EDGE,
     fingers: 4,
     difficulty: 3,
+    oneHanded: false,
     description: 'Large edge — center of board',
     positions: [
-      { x: 50, y: 52, w: 7, h: 8 },
+      { x: 50, y: 56, w: 8, h: 12 },
     ],
   },
   {
@@ -240,9 +259,10 @@ export const HOLDS = [
     type: HOLD_TYPES.SMALL_EDGE,
     fingers: 4,
     difficulty: 7,
+    oneHanded: false,
     description: 'Small edge — center bottom',
     positions: [
-      { x: 50, y: 70, w: 7, h: 8 },
+      { x: 50, y: 74, w: 8, h: 12 },
     ],
   },
 ];
