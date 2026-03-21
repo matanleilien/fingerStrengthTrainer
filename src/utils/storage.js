@@ -1,14 +1,34 @@
 // localStorage persistence layer
 
-const STORAGE_PREFIX = 'fst_';
+const GLOBAL_PREFIX = 'fst__';
+let currentUserId = null;
 
-function key(name) {
-  return STORAGE_PREFIX + name;
+function userKey(name) {
+  if (!currentUserId) throw new Error('No active user');
+  return `fst_${currentUserId}_${name}`;
+}
+
+function globalGet(name, fallback = null) {
+  try {
+    const raw = localStorage.getItem(GLOBAL_PREFIX + name);
+    if (raw === null) return fallback;
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
+function globalSet(name, value) {
+  try {
+    localStorage.setItem(GLOBAL_PREFIX + name, JSON.stringify(value));
+  } catch (e) {
+    console.warn('Storage write failed:', e);
+  }
 }
 
 function get(name, fallback = null) {
   try {
-    const raw = localStorage.getItem(key(name));
+    const raw = localStorage.getItem(userKey(name));
     if (raw === null) return fallback;
     return JSON.parse(raw);
   } catch {
@@ -18,14 +38,106 @@ function get(name, fallback = null) {
 
 function set(name, value) {
   try {
-    localStorage.setItem(key(name), JSON.stringify(value));
+    localStorage.setItem(userKey(name), JSON.stringify(value));
   } catch (e) {
     console.warn('Storage write failed:', e);
   }
 }
 
 function remove(name) {
-  localStorage.removeItem(key(name));
+  localStorage.removeItem(userKey(name));
+}
+
+// --- User Management ---
+export function getUsers() {
+  return globalGet('users', []);
+}
+
+function saveUsers(users) {
+  globalSet('users', users);
+}
+
+export function getActiveUserId() {
+  return globalGet('active_user', null);
+}
+
+export function createUser(name) {
+  const users = getUsers();
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  users.push({ id, name, createdAt: new Date().toISOString() });
+  saveUsers(users);
+  return id;
+}
+
+export function switchUser(userId) {
+  const users = getUsers();
+  if (!users.find(u => u.id === userId)) return false;
+  globalSet('active_user', userId);
+  currentUserId = userId;
+  return true;
+}
+
+export function deleteUser(userId) {
+  const users = getUsers();
+  const updated = users.filter(u => u.id !== userId);
+  saveUsers(updated);
+  // Clean up user data
+  const prefix = `fst_${userId}_`;
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith(prefix)) keysToRemove.push(k);
+  }
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+  // If deleted user was active, clear active
+  if (getActiveUserId() === userId) {
+    globalSet('active_user', null);
+    currentUserId = null;
+  }
+}
+
+export function renameUser(userId, newName) {
+  const users = getUsers();
+  const user = users.find(u => u.id === userId);
+  if (user) {
+    user.name = newName;
+    saveUsers(users);
+  }
+}
+
+export function initActiveUser() {
+  const activeId = getActiveUserId();
+  if (activeId && getUsers().find(u => u.id === activeId)) {
+    currentUserId = activeId;
+    return activeId;
+  }
+  return null;
+}
+
+export function getCurrentUserId() {
+  return currentUserId;
+}
+
+// --- Migration: move legacy fst_ data to a user ---
+export function migrateLegacyData() {
+  const legacyKeys = [
+    'profile', 'assessment', 'assessment_history', 'training_state',
+    'workout_history', 'next_assessment', 'failure_adjustments', 'goals',
+  ];
+  const hasLegacy = legacyKeys.some(k => localStorage.getItem('fst_' + k) !== null);
+  if (!hasLegacy) return false;
+
+  // Create a user for the legacy data
+  const id = createUser('My Profile');
+  legacyKeys.forEach(k => {
+    const val = localStorage.getItem('fst_' + k);
+    if (val !== null) {
+      localStorage.setItem(`fst_${id}_${k}`, val);
+      localStorage.removeItem('fst_' + k);
+    }
+  });
+  switchUser(id);
+  return true;
 }
 
 // --- User Profile ---

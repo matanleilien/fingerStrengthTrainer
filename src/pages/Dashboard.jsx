@@ -14,7 +14,7 @@ import {
 import { getProgressPercent, getSkillStatus } from '../utils/goalGenerator';
 import './Dashboard.css';
 
-export default function Dashboard({ onStartWorkout, onStartAssessment, onViewProgress, onReset }) {
+export default function Dashboard({ onStartWorkout, onStartAssessment, onViewProgress, onReset, onSwitchUser }) {
   const profile = getUserProfile();
   const assessmentResults = getAssessmentResults();
   const trainingState = getTrainingState();
@@ -239,6 +239,9 @@ export default function Dashboard({ onStartWorkout, onStartAssessment, onViewPro
       <div className="nav-buttons">
         <button className="btn-secondary" onClick={onViewProgress}>
           Progress &amp; History
+        </button>
+        <button className="btn-text" onClick={onSwitchUser}>
+          Switch User
         </button>
         <button className="btn-text" onClick={onReset}>
           Reset All Data

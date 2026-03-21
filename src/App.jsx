@@ -4,7 +4,8 @@ import Assessment from './pages/Assessment';
 import Dashboard from './pages/Dashboard';
 import Workout from './pages/Workout';
 import Progress from './pages/Progress';
-import { getUserProfile, resetAllData } from './utils/storage';
+import UserSelect from './pages/UserSelect';
+import { getUserProfile, resetAllData, initActiveUser, migrateLegacyData } from './utils/storage';
 import './App.css';
 
 export default function App() {
@@ -12,6 +13,20 @@ export default function App() {
   const [currentWorkout, setCurrentWorkout] = useState(null);
 
   useEffect(() => {
+    // Migrate legacy single-user data if present
+    if (migrateLegacyData()) {
+      // Legacy data migrated into a user, go straight to dashboard
+      setScreen('dashboard');
+      return;
+    }
+
+    // Check for active user
+    const activeId = initActiveUser();
+    if (!activeId) {
+      setScreen('user-select');
+      return;
+    }
+
     const profile = getUserProfile();
     if (!profile) {
       setScreen('onboarding');
@@ -19,6 +34,20 @@ export default function App() {
       setScreen('dashboard');
     }
   }, []);
+
+  function handleUserSelected() {
+    const profile = getUserProfile();
+    if (!profile) {
+      setScreen('onboarding');
+    } else {
+      setScreen('dashboard');
+    }
+  }
+
+  function handleSwitchUser() {
+    setCurrentWorkout(null);
+    setScreen('user-select');
+  }
 
   function handleOnboardingComplete() {
     setScreen('assessment');
@@ -52,7 +81,7 @@ export default function App() {
   }
 
   function handleReset() {
-    if (window.confirm('Reset all training data? This cannot be undone.')) {
+    if (window.confirm('Reset all training data for this user? This cannot be undone.')) {
       resetAllData();
       setScreen('onboarding');
     }
@@ -68,6 +97,9 @@ export default function App() {
 
   return (
     <div className="app">
+      {screen === 'user-select' && (
+        <UserSelect onUserSelected={handleUserSelected} />
+      )}
       {screen === 'onboarding' && (
         <Onboarding onComplete={handleOnboardingComplete} />
       )}
@@ -80,6 +112,7 @@ export default function App() {
           onStartAssessment={handleStartAssessment}
           onViewProgress={handleViewProgress}
           onReset={handleReset}
+          onSwitchUser={handleSwitchUser}
         />
       )}
       {screen === 'workout' && currentWorkout && (
