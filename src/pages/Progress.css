@@ -53,21 +53,23 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 0.6fr 50px;
   padding: 10px 14px;
   font-size: 0.75rem;
   color: #888;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid #333;
+  align-items: center;
 }
 
 .table-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 0.6fr 50px;
   padding: 10px 14px;
   border-bottom: 1px solid #222;
   font-size: 0.9rem;
+  align-items: center;
 }
 
 .table-row:last-child {
@@ -222,6 +224,23 @@
 .log-exercises {
   font-size: 0.8rem;
   color: #888;
+}
+
+.btn-share-sm {
+  background: none;
+  border: 1px solid #444;
+  color: #888;
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.btn-share-sm:hover {
+  color: #00e676;
+  border-color: #00e676;
 }
 
 .empty-state {

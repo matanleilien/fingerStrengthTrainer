@@ -1,12 +1,28 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { getAssessmentHistory, getWorkoutHistory, getGoals } from '../utils/storage';
 import { getProgressPercent, getSkillStatus } from '../utils/goalGenerator';
+import { formatWorkoutSummary, formatAssessmentSummary, copyToClipboard } from '../utils/share';
 import './Progress.css';
 
 export default function Progress({ onBack }) {
   const assessmentHistory = getAssessmentHistory();
   const workoutHistory = getWorkoutHistory();
   const goals = getGoals();
+  const [copiedId, setCopiedId] = useState(null);
+
+  async function handleShareWorkout(w, i) {
+    const text = formatWorkoutSummary(w);
+    await copyToClipboard(text);
+    setCopiedId(`w-${i}`);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
+
+  async function handleShareAssessment(a, i) {
+    const text = formatAssessmentSummary(a);
+    await copyToClipboard(text);
+    setCopiedId(`a-${i}`);
+    setTimeout(() => setCopiedId(null), 2000);
+  }
 
   const stats = useMemo(() => {
     if (!workoutHistory?.length) return null;
@@ -144,7 +160,8 @@ export default function Progress({ onBack }) {
               <span>Date</span>
               <span>Max Hang</span>
               <span>Avg Hang</span>
-              <span>Repeaters</span>
+              <span>Reps</span>
+              <span></span>
             </div>
             {assessmentTrend.map((a, i) => (
               <div key={i} className="table-row">
@@ -152,6 +169,12 @@ export default function Progress({ onBack }) {
                 <span className="val">{a.maxHang}s</span>
                 <span className="val">{a.avgHang}s</span>
                 <span className="val">{a.repeaters}</span>
+                <button
+                  className="btn-share-sm"
+                  onClick={() => handleShareAssessment(assessmentHistory[i], i)}
+                >
+                  {copiedId === `a-${i}` ? 'Copied!' : 'Share'}
+                </button>
               </div>
             ))}
           </div>
@@ -224,6 +247,12 @@ export default function Progress({ onBack }) {
                 <div className="log-exercises">
                   {w.completedCount}/{w.exerciseCount}
                 </div>
+                <button
+                  className="btn-share-sm"
+                  onClick={() => handleShareWorkout(w, i)}
+                >
+                  {copiedId === `w-${i}` ? 'Copied!' : 'Share'}
+                </button>
               </div>
             ))}
           </div>

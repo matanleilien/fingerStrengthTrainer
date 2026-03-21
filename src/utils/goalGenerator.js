@@ -131,12 +131,12 @@ function checkFailureAdjForSkill(skillKey, failureAdj) {
 
   const holdTypeMap = {
     'max_hang_jug': 'jug',
-    'max_hang_edge': 'medium_edge',
-    'max_hang_pocket': 'large_pocket_3f',
+    'max_hang_edge': 'edge',
+    'max_hang_pocket': 'three_finger_pocket',
     'repeater_test': 'jug',
-    'repeater_test_edge': 'medium_edge',
-    'max_hang_pocket_2f_r': 'large_pocket_2f__right',
-    'max_hang_pocket_2f_l': 'large_pocket_2f__left',
+    'repeater_test_edge': 'edge',
+    'max_hang_pocket_2f_r': 'two_finger_pocket__right',
+    'max_hang_pocket_2f_l': 'two_finger_pocket__left',
   };
 
   const key = holdTypeMap[skillKey];

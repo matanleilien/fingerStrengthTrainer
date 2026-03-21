@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import Fingerboard from '../components/Fingerboard';
 import TimerDisplay from '../components/TimerDisplay';
 import { useStopwatch, useTimer } from '../utils/useTimer';
@@ -20,7 +20,8 @@ const assessment = generateAssessment();
 
 export default function Assessment({ onComplete }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [phase, setPhase] = useState('intro');
+  const [phase, setPhase] = useState('warmup_intro');
+  const [warmupIndex, setWarmupIndex] = useState(0);
   const [results, setResults] = useState({});
   const [analysis, setAnalysis] = useState(null);
   const stopwatch = useStopwatch();
@@ -29,6 +30,7 @@ export default function Assessment({ onComplete }) {
 
   const currentTest = assessment.exercises[currentIndex];
   const isLastTest = currentIndex === assessment.exercises.length - 1;
+  const currentWarmup = assessment.warmup?.[warmupIndex];
 
   // Use refs to break circular timer dependencies
   const repeaterHangTimerRef = useRef(null);
@@ -38,6 +40,10 @@ export default function Assessment({ onComplete }) {
     (t) => { if (t <= 3 && t > 0) beepTick(); },
     () => {
       beepGo();
+      if (phase === 'warmup_countdown') {
+        setPhase('warmup_active');
+        return;
+      }
       if (currentTest.metric === 'time') {
         setPhase('active');
         stopwatch.start();
@@ -45,8 +51,21 @@ export default function Assessment({ onComplete }) {
         setPhase('active');
         setRepeaterCount(0);
         setRepeaterPhase('hang');
-        // Start first repeater hang
         repeaterHangTimerRef.current?.start(currentTest.hangTime || 7);
+      }
+    }
+  );
+
+  const warmupTimer = useTimer(
+    (t) => { if (t <= 3 && t > 0) beepWarning(); },
+    () => {
+      beepComplete();
+      // Move to next warmup or start tests
+      if (warmupIndex < (assessment.warmup?.length || 0) - 1) {
+        setWarmupIndex(prev => prev + 1);
+        setPhase('warmup_rest');
+      } else {
+        setPhase('intro');
       }
     }
   );
@@ -73,9 +92,22 @@ export default function Assessment({ onComplete }) {
     }
   );
 
-  // Keep refs in sync
   repeaterHangTimerRef.current = repeaterHangTimer;
   repeaterRestTimerRef.current = repeaterRestTimer;
+
+  function handleSkipWarmup() {
+    setPhase('intro');
+  }
+
+  function handleStartWarmup() {
+    setPhase('warmup_countdown');
+    countdownTimer.start(5);
+  }
+
+  function handleWarmupRestDone() {
+    setPhase('warmup_countdown');
+    countdownTimer.start(5);
+  }
 
   function handleStartTest() {
     setPhase('countdown');
@@ -119,7 +151,6 @@ export default function Assessment({ onComplete }) {
     saveAssessmentResults(assessmentData);
     appendAssessmentHistory(assessmentData);
 
-    // Generate or update goals
     const previousGoals = getGoals();
     const goals = previousGoals
       ? updateGoals(assessmentData, previousGoals)
@@ -143,6 +174,94 @@ export default function Assessment({ onComplete }) {
 
   // --- RENDER ---
 
+  // Warmup intro
+  if (phase === 'warmup_intro') {
+    return (
+      <div className="assessment">
+        <div className="assessment-card">
+          <h2>Warm Up</h2>
+          <p className="test-desc">
+            Before testing, warm up with a few easy hangs to get blood flowing and prevent injury.
+          </p>
+          <div className="warmup-list">
+            {assessment.warmup?.map((w, i) => (
+              <div key={i} className="warmup-item">
+                <span className="warmup-name">{w.name}</span>
+                <span className="warmup-detail">{w.holdName} — {w.duration}s</span>
+              </div>
+            ))}
+          </div>
+          <button className="btn-primary" onClick={handleStartWarmup}>
+            Start Warm-Up
+          </button>
+          <button className="btn-text warmup-skip" onClick={handleSkipWarmup}>
+            Skip warm-up
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Warmup countdown
+  if (phase === 'warmup_countdown' && currentWarmup) {
+    return (
+      <div className="assessment">
+        <Fingerboard activeHoldIds={[currentWarmup.holdId]} />
+        <div className="assessment-card">
+          <h2>{currentWarmup.name}</h2>
+          <p className="test-desc">{currentWarmup.description}</p>
+          <TimerDisplay
+            timeLeft={countdownTimer.timeLeft}
+            totalTime={5}
+            label="Get Ready"
+            large
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Warmup active hang
+  if (phase === 'warmup_active' && currentWarmup) {
+    if (!warmupTimer.isRunning && warmupTimer.timeLeft === 0) {
+      warmupTimer.start(currentWarmup.duration);
+    }
+    return (
+      <div className="assessment">
+        <Fingerboard activeHoldIds={[currentWarmup.holdId]} />
+        <div className="assessment-card">
+          <h2>{currentWarmup.name}</h2>
+          <TimerDisplay
+            timeLeft={warmupTimer.timeLeft}
+            totalTime={currentWarmup.duration}
+            label="HANG"
+            large
+          />
+          <p className="warmup-note">Easy effort — just warm up</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Warmup rest between exercises
+  if (phase === 'warmup_rest') {
+    return (
+      <div className="assessment">
+        <div className="assessment-card">
+          <h2>Rest</h2>
+          <p className="test-desc">Shake out your hands. Next: {assessment.warmup?.[warmupIndex]?.name}</p>
+          <button className="btn-primary" onClick={handleWarmupRestDone}>
+            Ready for Next
+          </button>
+          <button className="btn-text warmup-skip" onClick={handleSkipWarmup}>
+            Skip to tests
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Done screen
   if (phase === 'done' && analysis) {
     const profile = getUserProfile();
     const levelChanged = analysis.suggestedLevel !== profile?.level;
@@ -250,6 +369,7 @@ export default function Assessment({ onComplete }) {
     );
   }
 
+  // Main test flow
   return (
     <div className="assessment">
       <div className="assessment-header">

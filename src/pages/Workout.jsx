@@ -6,10 +6,12 @@ import { beepGo, beepRest, beepTick, beepWarning, beepComplete } from '../utils/
 import { appendWorkoutHistory } from '../utils/storage';
 import { processWorkoutResults } from '../utils/failureAdjustment';
 import { getHoldById } from '../data/holds';
+import { formatFullWorkoutDetail, copyToClipboard } from '../utils/share';
 import './Workout.css';
 
 export default function Workout({ workout, onComplete, onCancel }) {
   const [exIndex, setExIndex] = useState(0);
+  const [copied, setCopied] = useState(false);
   const [setNum, setSetNum] = useState(0);
   const [repNum, setRepNum] = useState(0);
   const [phase, setPhase] = useState('overview');
@@ -243,6 +245,17 @@ export default function Workout({ workout, onComplete, onCancel }) {
   // --- RENDER ---
 
   if (phase === 'complete') {
+    const handleShare = async () => {
+      const summary = formatFullWorkoutDetail(
+        { type: workout.type, intensity: workout.intensity, microCycleDay: workout.microCycleDay,
+          exerciseCount: totalExercises, completedCount: completedExercises.length + 1,
+          date: new Date().toISOString() },
+        workout.exercises
+      );
+      await copyToClipboard(summary);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
     return (
       <div className="workout">
         <div className="workout-card centered">
@@ -252,6 +265,9 @@ export default function Workout({ workout, onComplete, onCancel }) {
             {workout.type} cycle — {workout.microCycleDay || ''} day
           </p>
           <p>{completedExercises.length + 1} / {totalExercises} exercises completed</p>
+          <button className="btn-share" onClick={handleShare}>
+            {copied ? 'Copied!' : 'Share Workout'}
+          </button>
           <button className="btn-primary" onClick={onComplete}>
             Back to Dashboard
           </button>
