@@ -42,6 +42,7 @@ export default function Assessment({ onComplete }) {
       beepGo();
       if (phase === 'warmup_countdown') {
         setPhase('warmup_active');
+        warmupTimer.start(currentWarmup.duration);
         return;
       }
       if (currentTest.metric === 'time') {
@@ -223,9 +224,6 @@ export default function Assessment({ onComplete }) {
 
   // Warmup active hang
   if (phase === 'warmup_active' && currentWarmup) {
-    if (!warmupTimer.isRunning && warmupTimer.timeLeft === 0) {
-      warmupTimer.start(currentWarmup.duration);
-    }
     return (
       <div className="assessment">
         <Fingerboard activeHoldIds={[currentWarmup.holdId]} />
