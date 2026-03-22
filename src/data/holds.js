@@ -38,8 +38,8 @@ export const HOLDS = [
     oneHanded: false,
     description: 'Large jug rail at the outer edges — easiest hold',
     positions: [
-      { x: 5, y: 22, w: 9, h: 12 },
-      { x: 95, y: 22, w: 9, h: 12 },
+      { x: 7.5, y: 29, w: 7, h: 12 },
+      { x: 92.5, y: 29, w: 7, h: 12 },
     ],
   },
   {
@@ -53,8 +53,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '55mm flat slopers — requires open-hand technique',
     positions: [
-      { x: 20, y: 18, w: 10, h: 10 },
-      { x: 80, y: 18, w: 10, h: 10 },
+      { x: 22, y: 31, w: 10, h: 10 },
+      { x: 78, y: 31, w: 10, h: 10 },
     ],
   },
   {
@@ -68,8 +68,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '65mm round slopers — rounded profile, harder than flat',
     positions: [
-      { x: 35, y: 14, w: 9, h: 10 },
-      { x: 65, y: 14, w: 9, h: 10 },
+      { x: 36, y: 24, w: 9.5, h: 10 },
+      { x: 64, y: 24, w: 9.5, h: 10 },
     ],
   },
   {
@@ -83,8 +83,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '30mm 3-finger pockets on the outer section',
     positions: [
-      { x: 8, y: 36, w: 8, h: 10 },
-      { x: 92, y: 36, w: 8, h: 10 },
+      { x: 8, y: 40.5, w: 9, h: 10 },
+      { x: 92, y: 40.5, w: 9, h: 10 },
     ],
   },
   {
@@ -98,8 +98,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '25mm edges — medium depth, good for 4-finger training',
     positions: [
-      { x: 8, y: 53, w: 8, h: 10 },
-      { x: 92, y: 53, w: 8, h: 10 },
+      { x: 12.5, y: 52, w: 11, h: 10 },
+      { x: 87.5, y: 52, w: 11, h: 10 },
     ],
   },
   {
@@ -113,8 +113,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '19mm edges — shallow, intermediate to advanced',
     positions: [
-      { x: 21, y: 37, w: 8, h: 10 },
-      { x: 79, y: 37, w: 8, h: 10 },
+      { x: 25, y: 45.5, w: 8, h: 10 },
+      { x: 75, y: 45.5, w: 8, h: 10 },
     ],
   },
   {
@@ -128,8 +128,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '36mm edges — deepest edge on the board',
     positions: [
-      { x: 35, y: 36, w: 8, h: 10 },
-      { x: 65, y: 36, w: 8, h: 10 },
+      { x: 37, y: 41.5, w: 10.5, h: 10 },
+      { x: 63, y: 41.5, w: 10.5, h: 10 },
     ],
   },
   {
@@ -143,8 +143,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '15mm 3-finger pockets — shallowest 3-finger pocket, advanced',
     positions: [
-      { x: 10, y: 71, w: 8, h: 10 },
-      { x: 90, y: 71, w: 8, h: 10 },
+      { x: 16, y: 67, w: 6, h: 10 },
+      { x: 84, y: 67, w: 6, h: 10 },
     ],
   },
   {
@@ -158,8 +158,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '35mm 3-finger pockets — deepest side pocket',
     positions: [
-      { x: 22, y: 55, w: 8, h: 10 },
-      { x: 78, y: 55, w: 8, h: 10 },
+      { x: 27, y: 62.5, w: 6, h: 10 },
+      { x: 73, y: 62.5, w: 6, h: 10 },
     ],
   },
   {
@@ -173,8 +173,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '17mm 3-finger pockets — shallow, advanced',
     positions: [
-      { x: 36, y: 54, w: 8, h: 10 },
-      { x: 64, y: 54, w: 8, h: 10 },
+      { x: 38.5, y: 59, w: 6, h: 10 },
+      { x: 61.5, y: 59, w: 6, h: 10 },
     ],
   },
   {
@@ -188,8 +188,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '14mm edges — shallowest edge on the board, expert',
     positions: [
-      { x: 13, y: 88, w: 9, h: 10 },
-      { x: 87, y: 88, w: 9, h: 10 },
+      { x: 23, y: 80, w: 8.5, h: 10 },
+      { x: 77, y: 80, w: 8.5, h: 10 },
     ],
   },
   {
@@ -203,8 +203,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '30mm 2-finger pockets — deep 2-finger',
     positions: [
-      { x: 24, y: 72, w: 7, h: 10 },
-      { x: 76, y: 72, w: 7, h: 10 },
+      { x: 33, y: 76, w: 6, h: 10 },
+      { x: 67, y: 76, w: 6, h: 10 },
     ],
   },
   {
@@ -218,8 +218,8 @@ export const HOLDS = [
     oneHanded: false,
     description: '14mm 2-finger pockets — shallowest 2-finger, expert',
     positions: [
-      { x: 37, y: 71, w: 7, h: 10 },
-      { x: 63, y: 71, w: 7, h: 10 },
+      { x: 41, y: 73, w: 6, h: 10 },
+      { x: 59, y: 73, w: 6, h: 10 },
     ],
   },
   {
@@ -230,10 +230,10 @@ export const HOLDS = [
     depthMm: null,
     depth: 'jug',
     difficulty: 1,
-    oneHanded: false,
-    description: 'Center jug at the top — easiest hold',
+    oneHanded: true,
+    description: 'Center jug at the top — one hand at a time',
     positions: [
-      { x: 50, y: 7, w: 12, h: 10 },
+      { x: 51, y: 12, w: 9, h: 12 },
     ],
   },
   {
@@ -244,10 +244,10 @@ export const HOLDS = [
     depthMm: 50,
     depth: '50mm',
     difficulty: 2,
-    oneHanded: false,
-    description: '50mm 3-finger pocket — center, deepest pocket on the board',
+    oneHanded: true,
+    description: '50mm 3-finger pocket — center, one hand at a time',
     positions: [
-      { x: 50, y: 15, w: 9, h: 10 },
+      { x: 51, y: 24, w: 10.5, h: 10 },
     ],
   },
   {
@@ -261,7 +261,7 @@ export const HOLDS = [
     oneHanded: true,
     description: '37mm 3-finger pocket — center, one hand at a time',
     positions: [
-      { x: 50, y: 36, w: 8, h: 10 },
+      { x: 50.5, y: 42.5, w: 8.5, h: 10 },
     ],
   },
   {
@@ -275,7 +275,7 @@ export const HOLDS = [
     oneHanded: true,
     description: '28mm 2-finger pocket — center, one hand at a time',
     positions: [
-      { x: 50, y: 54, w: 8, h: 10 },
+      { x: 51, y: 59.5, w: 8, h: 10 },
     ],
   },
   {
@@ -289,7 +289,7 @@ export const HOLDS = [
     oneHanded: true,
     description: '32mm 2-finger pocket — center, one hand at a time',
     positions: [
-      { x: 50, y: 71, w: 8, h: 10 },
+      { x: 51, y: 76, w: 6, h: 10 },
     ],
   },
 ];

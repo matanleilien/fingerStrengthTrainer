@@ -97,8 +97,8 @@ function selectHoldsForWorkout(holds, intensity, level) {
   const sorted = [...holds].sort((a, b) => a.difficulty - b.difficulty);
   const targetDifficulty = Math.ceil(sorted.length * intensity);
 
-  // Always include an easy hold for warm-up
-  const easyHold = sorted[0];
+  // Always include an easy two-handed hold for warm-up (never one-handed center holds)
+  const easyHold = sorted.find(h => !h.oneHanded) || sorted[0];
   const workHolds = sorted.slice(
     Math.max(0, targetDifficulty - 3),
     Math.min(sorted.length, targetDifficulty + 1)
@@ -112,7 +112,8 @@ function selectHoldsForWorkout(holds, intensity, level) {
 
 function buildExerciseSequence(cycle, microDay, exercises, holds, hangTime, restTime, reps, intensity, level) {
   const sequence = [];
-  const warmUpHold = holds[0]; // easiest hold
+  // Never use one-handed (center) holds for warm-up
+  const warmUpHold = holds.find(h => !h.oneHanded) || holds[0];
 
   // Warm-up: always start with easy dead hangs
   sequence.push({
@@ -312,8 +313,8 @@ export function generateAssessment() {
       {
         id: 'warmup_hang_jug',
         name: 'Warm-Up — Easy Jug Hang',
-        holdId: 14,
-        holdName: '#14 Center Jug',
+        holdId: 1,
+        holdName: '#1 Outer Jugs',
         description: 'Easy 10-second hang on the jug. Slight elbow bend, relax your shoulders.',
         duration: 10,
       },
@@ -337,10 +338,10 @@ export function generateAssessment() {
     exercises: [
       {
         id: 'max_hang_jug',
-        name: 'Max Hang — #14 Center Jug',
+        name: 'Max Hang — #1 Outer Jugs',
         exercise: { id: 'dead_hang', name: 'Dead Hang' },
-        holdId: 14,
-        holdName: '#14 Center Jug',
+        holdId: 1,
+        holdName: '#1 Outer Jugs',
         description: 'Hang as long as you can on the jug. Open-hand grip, slight elbow bend.',
         metric: 'time',
         unit: 'seconds',
@@ -367,10 +368,10 @@ export function generateAssessment() {
       },
       {
         id: 'repeater_test',
-        name: 'Repeater Test — #14 Center Jug',
+        name: 'Repeater Test — #1 Outer Jugs',
         exercise: { id: 'repeaters', name: 'Repeaters' },
-        holdId: 14,
-        holdName: '#14 Center Jug',
+        holdId: 1,
+        holdName: '#1 Outer Jugs',
         description: '7s on / 3s off on the jug. Count how many full reps you complete before failure.',
         metric: 'reps',
         unit: 'reps',

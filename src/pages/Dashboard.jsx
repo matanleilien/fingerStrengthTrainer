@@ -93,7 +93,7 @@ export default function Dashboard({ onStartWorkout, onStartAssessment, onViewPro
         </div>
       </div>
 
-      {/* Assessment due banner */}
+{/* Assessment due banner */}
       {isAssessmentDue && (
         <div className="assessment-banner" onClick={onStartAssessment}>
           <span className="banner-text">Assessment due — tap to test your progress</span>

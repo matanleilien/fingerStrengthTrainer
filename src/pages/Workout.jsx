@@ -328,6 +328,11 @@ export default function Workout({ workout, onComplete, onCancel }) {
 
         {/* Badges */}
         <div className="exercise-badges">
+          {currentExercise.hand && (
+            <span className={`hand-indicator ${currentExercise.hand}`}>
+              {currentExercise.hand === 'right' ? 'RIGHT HAND' : 'LEFT HAND'}
+            </span>
+          )}
           {currentExercise.isWarmUp && (
             <span className="warm-up-badge">WARM-UP</span>
           )}

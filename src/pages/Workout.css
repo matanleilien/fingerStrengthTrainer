@@ -118,6 +118,25 @@
   letter-spacing: 1px;
 }
 
+.hand-indicator {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+}
+
+.hand-indicator.right {
+  background: #2196f333;
+  color: #42a5f5;
+}
+
+.hand-indicator.left {
+  background: #ab47bc33;
+  color: #ce93d8;
+}
+
 .btn-fail {
   margin-top: 12px;
   opacity: 0.7;
