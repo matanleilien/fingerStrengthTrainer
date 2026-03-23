@@ -1,14 +1,24 @@
-import { useMemo, useState } from 'react';
-import { getAssessmentHistory, getWorkoutHistory, getGoals } from '../utils/storage';
+import { useMemo, useState, useCallback } from 'react';
+import {
+  getAssessmentHistory,
+  getWorkoutHistory,
+  getGoals,
+  updateWorkoutHistoryItem,
+  deleteWorkoutHistoryItem,
+} from '../utils/storage';
 import { getProgressPercent, getSkillStatus } from '../utils/goalGenerator';
 import { formatWorkoutSummary, formatAssessmentSummary, copyToClipboard } from '../utils/share';
 import './Progress.css';
 
 export default function Progress({ onBack }) {
-  const assessmentHistory = getAssessmentHistory();
-  const workoutHistory = getWorkoutHistory();
+  const [assessmentHistory] = useState(() => getAssessmentHistory());
+  const [workoutHistory, setWorkoutHistory] = useState(() => getWorkoutHistory());
   const goals = getGoals();
   const [copiedId, setCopiedId] = useState(null);
+  const [expandedIndex, setExpandedIndex] = useState(null); // actual array index
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editData, setEditData] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   async function handleShareWorkout(w, i) {
     const text = formatWorkoutSummary(w);
@@ -24,21 +34,83 @@ export default function Progress({ onBack }) {
     setTimeout(() => setCopiedId(null), 2000);
   }
 
+  // Reverse display order but track real indices
+  const displayWorkouts = useMemo(() => {
+    if (!workoutHistory?.length) return [];
+    return workoutHistory
+      .map((w, i) => ({ ...w, _realIndex: i }))
+      .reverse()
+      .slice(0, 30);
+  }, [workoutHistory]);
+
+  function handleToggleExpand(realIndex) {
+    setExpandedIndex(prev => (prev === realIndex ? null : realIndex));
+    setEditingIndex(null);
+    setEditData(null);
+  }
+
+  function handleStartEdit(realIndex) {
+    const w = workoutHistory[realIndex];
+    setEditingIndex(realIndex);
+    setEditData({
+      type: w.type,
+      intensity: w.intensity,
+      microCycleDay: w.microCycleDay || '',
+      exercises: w.exercises
+        ? w.exercises.map(ex => ({ ...ex }))
+        : null,
+    });
+  }
+
+  function handleSaveEdit(realIndex) {
+    if (!editData) return;
+    const updated = { ...editData };
+    if (updated.exercises) {
+      updated.completedCount = updated.exercises.filter(e => e.status === 'completed').length;
+      updated.failedCount = updated.exercises.filter(e => e.status === 'failed').length;
+      updated.exerciseCount = updated.exercises.length;
+    }
+    updateWorkoutHistoryItem(realIndex, updated);
+    setWorkoutHistory(getWorkoutHistory());
+    setEditingIndex(null);
+    setEditData(null);
+  }
+
+  function handleCancelEdit() {
+    setEditingIndex(null);
+    setEditData(null);
+  }
+
+  function handleDelete(realIndex) {
+    deleteWorkoutHistoryItem(realIndex);
+    setWorkoutHistory(getWorkoutHistory());
+    setExpandedIndex(null);
+    setDeleteConfirm(null);
+  }
+
+  function toggleExerciseStatus(exIdx) {
+    if (!editData?.exercises) return;
+    setEditData(prev => ({
+      ...prev,
+      exercises: prev.exercises.map((ex, i) =>
+        i === exIdx
+          ? { ...ex, status: ex.status === 'completed' ? 'failed' : ex.status === 'failed' ? 'skipped' : 'completed' }
+          : ex
+      ),
+    }));
+  }
+
   const stats = useMemo(() => {
     if (!workoutHistory?.length) return null;
-
     const totalWorkouts = workoutHistory.length;
     const thisWeek = workoutHistory.filter(w => {
       const d = new Date(w.date);
-      const now = new Date();
-      const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
       return d >= weekAgo;
     }).length;
-
     const avgIntensity = Math.round(
       workoutHistory.reduce((sum, w) => sum + (w.intensity || 0), 0) / totalWorkouts
     );
-
     return { totalWorkouts, thisWeek, avgIntensity };
   }, [workoutHistory]);
 
@@ -103,11 +175,8 @@ export default function Progress({ onBack }) {
                       {status.label}
                     </span>
                   </div>
-
-                  {/* Progress bar with milestones */}
                   <div className="goal-detail-bar-track">
                     <div className="goal-detail-bar-fill" style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
-                    {/* Milestone markers */}
                     <div className="milestone" style={{ left: `${getProgressPercent(skill.target2Week, skill.baseline, skill.target8Week)}%` }}>
                       <span className="milestone-label">2w</span>
                     </div>
@@ -115,8 +184,6 @@ export default function Progress({ onBack }) {
                       <span className="milestone-label">4w</span>
                     </div>
                   </div>
-
-                  {/* Timeline values */}
                   <div className="goal-timeline">
                     <div className="timeline-point">
                       <span className="tp-value">{skill.baseline}{skill.unit === 'seconds' ? 's' : skill.unit === '%' ? '%' : ''}</span>
@@ -138,7 +205,6 @@ export default function Progress({ onBack }) {
                       <span className="tp-label">8 weeks</span>
                     </div>
                   </div>
-
                   <div className="goal-current">
                     Current: <strong>{skill.current}{skill.unit === 'seconds' ? 's' : skill.unit === '%' ? '%' : ''}</strong>
                     {' '}({Math.round(pct)}% toward 8-week goal)
@@ -179,7 +245,6 @@ export default function Progress({ onBack }) {
             ))}
           </div>
 
-          {/* Simple bar chart for max hang trend */}
           {assessmentTrend.length > 1 && (
             <div className="trend-chart">
               <h4>Max Hang Trend</h4>
@@ -200,7 +265,6 @@ export default function Progress({ onBack }) {
             </div>
           )}
 
-          {/* Improvement indicator */}
           {assessmentTrend.length >= 2 && (() => {
             const first = assessmentTrend[0];
             const last = assessmentTrend[assessmentTrend.length - 1];
@@ -228,33 +292,117 @@ export default function Progress({ onBack }) {
       )}
 
       {/* Workout log */}
-      {workoutHistory?.length > 0 && (
+      {displayWorkouts.length > 0 && (
         <div className="section">
           <h3>Workout Log</h3>
           <div className="workout-log">
-            {[...workoutHistory].reverse().slice(0, 20).map((w, i) => (
-              <div key={i} className="log-item">
-                <div className="log-date">
-                  {new Date(w.date).toLocaleDateString('en-US', {
-                    weekday: 'short', month: 'short', day: 'numeric'
-                  })}
+            {displayWorkouts.map((w) => {
+              const ri = w._realIndex;
+              const isExpanded = expandedIndex === ri;
+              const isEditing = editingIndex === ri;
+              const isDeleting = deleteConfirm === ri;
+
+              return (
+                <div key={ri} className={`log-entry ${isExpanded ? 'expanded' : ''}`}>
+                  {/* Summary row — clickable */}
+                  <div className="log-item" onClick={() => handleToggleExpand(ri)}>
+                    <div className="log-date">
+                      {new Date(w.date).toLocaleDateString('en-US', {
+                        weekday: 'short', month: 'short', day: 'numeric'
+                      })}
+                    </div>
+                    <div className="log-details">
+                      <span className="log-type">{w.type}</span>
+                      {w.microCycleDay && <span className="log-micro">{w.microCycleDay}</span>}
+                    </div>
+                    <div className="log-intensity">{w.intensity}%</div>
+                    <div className="log-exercises">
+                      {w.completedCount}/{w.exerciseCount}
+                    </div>
+                    <span className={`log-chevron ${isExpanded ? 'open' : ''}`}>&#9662;</span>
+                  </div>
+
+                  {/* Expanded detail */}
+                  {isExpanded && (
+                    <div className="log-detail">
+                      {/* Action bar */}
+                      <div className="log-actions">
+                        <button
+                          className="btn-share-sm"
+                          onClick={(e) => { e.stopPropagation(); handleShareWorkout(w, ri); }}
+                        >
+                          {copiedId === `w-${ri}` ? 'Copied!' : 'Share'}
+                        </button>
+                        {!isEditing && (
+                          <button className="btn-share-sm" onClick={() => handleStartEdit(ri)}>
+                            Edit
+                          </button>
+                        )}
+                        {!isDeleting ? (
+                          <button className="btn-share-sm btn-delete-sm" onClick={() => setDeleteConfirm(ri)}>
+                            Delete
+                          </button>
+                        ) : (
+                          <span className="delete-confirm">
+                            <span className="delete-confirm-text">Delete?</span>
+                            <button className="btn-share-sm btn-delete-sm" onClick={() => handleDelete(ri)}>Yes</button>
+                            <button className="btn-share-sm" onClick={() => setDeleteConfirm(null)}>No</button>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Exercise list */}
+                      {w.exercises?.length > 0 ? (
+                        <div className="exercise-detail-list">
+                          {(isEditing ? editData.exercises : w.exercises).map((ex, ei) => (
+                            <div
+                              key={ei}
+                              className={`exercise-detail-row ${ex.status === 'failed' ? 'failed' : ex.status === 'skipped' ? 'skipped' : ''}`}
+                              onClick={isEditing ? () => toggleExerciseStatus(ei) : undefined}
+                            >
+                              <div className="ex-status-icon">
+                                {ex.status === 'completed' ? '\u2713' : ex.status === 'failed' ? '!' : '\u2014'}
+                              </div>
+                              <div className="ex-info">
+                                <div className="ex-name">
+                                  {ex.name}
+                                  {ex.hand && <span className={`ex-hand ${ex.hand}`}>{ex.hand === 'right' ? 'R' : 'L'}</span>}
+                                  {ex.isWarmUp && <span className="ex-warmup-tag">warm-up</span>}
+                                </div>
+                                <div className="ex-hold">{ex.holdName}</div>
+                              </div>
+                              <div className="ex-params">
+                                {ex.sets > 1 && <span>{ex.sets}x</span>}
+                                {ex.hangTime > 0 && <span>{ex.hangTime}s</span>}
+                                {ex.reps > 1 && <span>{ex.reps}r</span>}
+                              </div>
+                              {ex.status === 'failed' && ex.failedAtSet !== null && (
+                                <div className="ex-fail-info">
+                                  Failed set {ex.failedAtSet + 1}
+                                  {ex.failedAtRep !== null && `, rep ${ex.failedAtRep + 1}`}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="no-exercises-note">
+                          No exercise details recorded for this workout.
+                        </p>
+                      )}
+
+                      {/* Edit save/cancel */}
+                      {isEditing && (
+                        <div className="edit-actions">
+                          <button className="btn-secondary" onClick={handleCancelEdit}>Cancel</button>
+                          <button className="btn-primary" onClick={() => handleSaveEdit(ri)}>Save</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div className="log-details">
-                  <span className="log-type">{w.type}</span>
-                  {w.microCycleDay && <span className="log-micro">{w.microCycleDay}</span>}
-                </div>
-                <div className="log-intensity">{w.intensity}%</div>
-                <div className="log-exercises">
-                  {w.completedCount}/{w.exerciseCount}
-                </div>
-                <button
-                  className="btn-share-sm"
-                  onClick={() => handleShareWorkout(w, i)}
-                >
-                  {copiedId === `w-${i}` ? 'Copied!' : 'Share'}
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

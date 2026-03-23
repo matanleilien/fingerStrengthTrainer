@@ -228,6 +228,23 @@ export default function Workout({ workout, onComplete, onCancel }) {
       exerciseCount: totalExercises,
       completedCount: allResults.filter(r => r.status === 'completed').length,
       failedCount: allResults.filter(r => r.status === 'failed').length,
+      exercises: exercises.map((ex, i) => {
+        const result = allResults.find(r => r.exIndex === i);
+        return {
+          name: ex.exercise?.name || 'Exercise',
+          holdName: ex.holdName,
+          holdId: ex.holdId,
+          hand: ex.hand || null,
+          sets: ex.sets || 1,
+          reps: ex.reps || 1,
+          hangTime: ex.hangTime || 0,
+          restTime: ex.restTime || 0,
+          isWarmUp: ex.isWarmUp || false,
+          status: result?.status || 'completed',
+          failedAtSet: result?.failedAtSet ?? null,
+          failedAtRep: result?.failedAtRep ?? null,
+        };
+      }),
     });
 
     // Process failures/successes to adjust future workouts

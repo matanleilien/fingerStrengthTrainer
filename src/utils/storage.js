@@ -190,6 +190,22 @@ export function appendWorkoutHistory(workout) {
   set('workout_history', history);
 }
 
+export function updateWorkoutHistoryItem(index, updatedWorkout) {
+  const history = getWorkoutHistory();
+  if (index >= 0 && index < history.length) {
+    history[index] = { ...history[index], ...updatedWorkout };
+    set('workout_history', history);
+  }
+}
+
+export function deleteWorkoutHistoryItem(index) {
+  const history = getWorkoutHistory();
+  if (index >= 0 && index < history.length) {
+    history.splice(index, 1);
+    set('workout_history', history);
+  }
+}
+
 // --- Next Assessment Due ---
 export function getNextAssessmentDate() {
   return get('next_assessment', null);
