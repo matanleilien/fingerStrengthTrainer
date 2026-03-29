@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import Fingerboard from '../components/Fingerboard';
 import TimerDisplay from '../components/TimerDisplay';
 import { useTimer } from '../utils/useTimer';
@@ -315,11 +315,9 @@ export default function Workout({ workout, onComplete, onCancel }) {
             Set {setNum + 1}/{currentExercise.sets || 1}
           </span>
         </div>
-        {phase !== 'overview' && phase !== 'exercise_done' && (
-          <button className="btn-icon" onClick={isPaused ? handleResume : handlePause}>
-            {isPaused ? '▶' : '⏸'}
-          </button>
-        )}
+        <button className="btn-icon" onClick={isPaused ? handleResume : handlePause}>
+          {isPaused ? '▶' : '⏸'}
+        </button>
       </div>
 
       {/* Progress bar */}
@@ -503,13 +501,21 @@ export default function Workout({ workout, onComplete, onCancel }) {
         })()}
       </div>
 
+      {/* Finish workout button — always accessible */}
+      <div className="finish-bar">
+        <button className="btn-finish-workout" onClick={finishWorkout}>
+          Finish Workout
+        </button>
+      </div>
+
       {/* Pause overlay */}
       {isPaused && (
-        <div className="pause-overlay" onClick={handleResume}>
+        <div className="pause-overlay">
           <div className="pause-content">
             <span className="pause-icon">⏸</span>
             <p>PAUSED</p>
-            <p className="muted">Tap to resume</p>
+            <button className="btn-resume" onClick={handleResume}>Resume</button>
+            <button className="btn-finish-overlay" onClick={finishWorkout}>Finish Workout</button>
           </div>
         </div>
       )}
