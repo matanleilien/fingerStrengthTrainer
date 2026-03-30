@@ -3,6 +3,8 @@ import { HOLDS, getHoldsByDifficultyRange, getHoldById } from './holds';
 import { EXERCISES, getExercisesForLevel } from './exercises';
 import { CYCLE_CONFIG, getCycleIntensity } from './periodization';
 import { applyAdjustmentToExercise } from '../utils/failureAdjustment';
+import { getBandConfig, defaultBandAssistance } from '../utils/bandAssistance';
+import { getBandAssistance } from '../utils/storage';
 
 const LEVELS = {
   1: { name: 'Beginner', maxHoldDifficulty: 4, baseHangTime: 10, baseReps: 3 },
@@ -68,25 +70,33 @@ export function generateWorkout(userProfile, cycleInfo, assessmentResults, failu
 }
 
 // For one-handed holds, duplicate the exercise: once for right hand, once for left
+// Also annotates with the user's current band assistance level
 function expandOneHandedExercises(exercises) {
+  const bandAssistance = getBandAssistance() || defaultBandAssistance();
   const expanded = [];
   for (const ex of exercises) {
     const hold = getHoldById(ex.holdId);
     if (hold?.oneHanded) {
-      expanded.push({
-        ...ex,
-        hand: 'right',
-        holdName: `${ex.holdName} (R)`,
-        notes: ex.notes ? `${ex.notes} — RIGHT hand` : 'RIGHT hand',
-      });
-      expanded.push({
-        ...ex,
-        hand: 'left',
-        holdName: `${ex.holdName} (L)`,
-        notes: ex.notes ? `${ex.notes} — LEFT hand` : 'LEFT hand',
-      });
+      for (const hand of ['right', 'left']) {
+        const bandLevel = bandAssistance[hand] || 'none';
+        const bandConfig = getBandConfig(bandLevel);
+        const needsBand = bandLevel !== 'none';
+        expanded.push({
+          ...ex,
+          hand,
+          holdName: `${ex.holdName} (${hand === 'right' ? 'R' : 'L'})`,
+          bandLevel,
+          bandConfig,
+          notes: needsBand
+            ? `${hand.toUpperCase()} hand — ${bandConfig.label}: ${bandConfig.description}`
+            : `${hand.toUpperCase()} hand — unassisted`,
+          hangTime: needsBand
+            ? Math.max(ex.hangTime || 10, bandConfig.targetHangTime)
+            : ex.hangTime,
+        });
+      }
     } else {
-      expanded.push({ ...ex, hand: null });
+      expanded.push({ ...ex, hand: null, bandLevel: null });
     }
   }
   return expanded;

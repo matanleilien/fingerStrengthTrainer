@@ -339,13 +339,20 @@ export default function Workout({ workout, onComplete, onCancel }) {
       <div className="workout-card">
         <h2>{currentExercise.exercise?.name || 'Exercise'}</h2>
         <p className="hold-name">Hold: {currentExercise.holdName}</p>
-        {currentExercise.notes && <p className="exercise-notes">{currentExercise.notes}</p>}
 
         {/* Badges */}
         <div className="exercise-badges">
           {currentExercise.hand && (
             <span className={`hand-indicator ${currentExercise.hand}`}>
               {currentExercise.hand === 'right' ? 'RIGHT HAND' : 'LEFT HAND'}
+            </span>
+          )}
+          {currentExercise.bandLevel && currentExercise.bandLevel !== 'none' && (
+            <span
+              className="band-badge"
+              style={{ background: currentExercise.bandConfig?.color + '33', color: currentExercise.bandConfig?.color }}
+            >
+              {currentExercise.bandConfig?.label}
             </span>
           )}
           {currentExercise.isWarmUp && (
@@ -355,6 +362,17 @@ export default function Workout({ workout, onComplete, onCancel }) {
             <span className="adjusted-badge">ADJUSTED</span>
           )}
         </div>
+
+        {/* Band instructions box */}
+        {currentExercise.bandLevel && currentExercise.bandLevel !== 'none' && (
+          <div className="band-instructions" style={{ borderColor: currentExercise.bandConfig?.color }}>
+            <strong style={{ color: currentExercise.bandConfig?.color }}>
+              Band Setup ({currentExercise.bandConfig?.assistance} assistance)
+            </strong>
+            <p>{currentExercise.bandConfig?.description}</p>
+            <p className="band-target">Target: {currentExercise.bandConfig?.targetHangTime}s hang. Hit {currentExercise.bandConfig?.promoteThreshold}s for 3 sessions to progress to a lighter band.</p>
+          </div>
+        )}
 
         {/* Overview phase */}
         {phase === 'overview' && (

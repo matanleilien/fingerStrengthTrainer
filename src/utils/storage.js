@@ -233,6 +233,15 @@ export function saveGoals(goals) {
   set('goals', goals);
 }
 
+// --- Band Assistance ---
+export function getBandAssistance() {
+  return get('band_assistance', null);
+}
+
+export function saveBandAssistance(bandAssistance) {
+  set('band_assistance', bandAssistance);
+}
+
 // --- Full Reset ---
 export function resetAllData() {
   const keys = [

@@ -5,9 +5,12 @@ import {
   getGoals,
   updateWorkoutHistoryItem,
   deleteWorkoutHistoryItem,
+  getBandAssistance,
+  saveBandAssistance,
 } from '../utils/storage';
 import { getProgressPercent, getSkillStatus } from '../utils/goalGenerator';
 import { formatWorkoutSummary, formatAssessmentSummary, copyToClipboard } from '../utils/share';
+import { BAND_LEVELS, nextBandLevel } from '../utils/bandAssistance';
 import './Progress.css';
 
 export default function Progress({ onBack }) {
@@ -15,6 +18,7 @@ export default function Progress({ onBack }) {
   const [workoutHistory, setWorkoutHistory] = useState(() => getWorkoutHistory());
   const goals = getGoals();
   const [copiedId, setCopiedId] = useState(null);
+  const [bandAssistance, setBandAssistance] = useState(() => getBandAssistance());
   const [expandedIndex, setExpandedIndex] = useState(null); // actual array index
   const [editingIndex, setEditingIndex] = useState(null);
   const [editData, setEditData] = useState(null);
@@ -150,6 +154,49 @@ export default function Progress({ onBack }) {
               <span className="stat-big">{stats.avgIntensity}%</span>
               <span className="stat-desc">Avg Intensity</span>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Band Assistance */}
+      {bandAssistance && (
+        <div className="section">
+          <h3>One-Arm Band Assistance</h3>
+          <p className="goals-note">Progress by hitting {'{'}target{'}'}s for 3 consecutive sessions, then drop to a lighter band.</p>
+          <div className="band-progress-grid">
+            {['right', 'left'].map(hand => {
+              const level = bandAssistance[hand] || 'none';
+              const config = BAND_LEVELS[level];
+              const next = nextBandLevel(level);
+              const nextConfig = BAND_LEVELS[next];
+              return (
+                <div key={hand} className="band-progress-card">
+                  <div className="band-hand-label">{hand === 'right' ? 'Right Hand' : 'Left Hand'}</div>
+                  <div className="band-current-level" style={{ color: config.color }}>
+                    {config.label}
+                  </div>
+                  <div className="band-assistance-pct">{config.assistance}</div>
+                  {level !== 'none' && (
+                    <div className="band-target-info">
+                      Target: {config.targetHangTime}s → promote at {config.promoteThreshold}s
+                    </div>
+                  )}
+                  {level !== 'none' && (
+                    <button
+                      className="btn-promote-band"
+                      style={{ borderColor: nextConfig.color, color: nextConfig.color }}
+                      onClick={() => {
+                        const updated = { ...bandAssistance, [hand]: next };
+                        saveBandAssistance(updated);
+                        setBandAssistance(updated);
+                      }}
+                    >
+                      Promote → {nextConfig.label}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

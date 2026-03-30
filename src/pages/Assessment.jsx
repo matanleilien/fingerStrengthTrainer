@@ -12,8 +12,10 @@ import {
   saveUserProfile,
   getGoals,
   saveGoals,
+  saveBandAssistance,
 } from '../utils/storage';
 import { generateGoals, updateGoals } from '../utils/goalGenerator';
+import { bandLevelFromHangTime } from '../utils/bandAssistance';
 import './Assessment.css';
 
 const assessment = generateAssessment();
@@ -157,6 +159,14 @@ export default function Assessment({ onComplete }) {
       ? updateGoals(assessmentData, previousGoals)
       : generateGoals(assessmentData);
     saveGoals(goals);
+
+    // Determine band assistance level from one-arm hang results
+    const rightTime = results.max_hang_pocket_2f_r || 0;
+    const leftTime = results.max_hang_pocket_2f_l || 0;
+    saveBandAssistance({
+      right: bandLevelFromHangTime(rightTime),
+      left: bandLevelFromHangTime(leftTime),
+    });
 
     const nextDate = new Date();
     nextDate.setDate(nextDate.getDate() + 14);

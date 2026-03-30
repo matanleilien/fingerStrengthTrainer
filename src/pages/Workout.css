@@ -127,6 +127,36 @@
   letter-spacing: 1px;
 }
 
+.band-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+}
+
+.band-instructions {
+  margin: 10px 0;
+  padding: 10px 14px;
+  border-left: 3px solid;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.04);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.band-instructions p {
+  margin: 4px 0 0;
+  color: #ccc;
+}
+
+.band-target {
+  margin-top: 6px !important;
+  color: #aaa !important;
+  font-style: italic;
+}
+
 .hand-indicator.right {
   background: #2196f333;
   color: #42a5f5;
