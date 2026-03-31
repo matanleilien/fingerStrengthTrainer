@@ -309,11 +309,13 @@ export default function Workout({ workout, onComplete, onCancel }) {
         <button className="btn-icon" onClick={onCancel}>&larr;</button>
         <div className="workout-progress-info">
           <span className="exercise-counter">
-            Exercise {exIndex + 1}/{totalExercises}
+            {currentExercise.minuteNum
+              ? `Minute ${currentExercise.minuteNum}/10`
+              : `Exercise ${exIndex + 1}/${totalExercises}`}
           </span>
-          <span className="set-counter">
-            Set {setNum + 1}/{currentExercise.sets || 1}
-          </span>
+          {(currentExercise.sets || 1) > 1 && (
+            <span className="set-counter">Set {setNum + 1}/{currentExercise.sets}</span>
+          )}
         </div>
         <button className="btn-icon" onClick={isPaused ? handleResume : handlePause}>
           {isPaused ? '▶' : '⏸'}
@@ -330,7 +332,9 @@ export default function Workout({ workout, onComplete, onCancel }) {
 
       {/* Fingerboard */}
       <Fingerboard
-        activeHoldIds={phase === 'rest' || phase === 'set_rest' ? [] : [currentExercise.holdId]}
+        activeHoldIds={phase === 'rest' || phase === 'set_rest'
+          ? []
+          : [currentExercise.holdId, ...(currentExercise.altHoldIds || [])]}
         highlightColor={phase === 'work' ? '#00e676' : '#ffab00'}
         activeHand={currentExercise.hand || null}
       />

@@ -5,6 +5,7 @@ import { CYCLE_CONFIG, getCycleIntensity } from './periodization';
 import { applyAdjustmentToExercise } from '../utils/failureAdjustment';
 import { getBandConfig, defaultBandAssistance } from '../utils/bandAssistance';
 import { getBandAssistance } from '../utils/storage';
+import { TEN_MINUTE_SEQUENCES } from './trainingGuide';
 
 const LEVELS = {
   1: { name: 'Beginner', maxHoldDifficulty: 4, baseHangTime: 10, baseReps: 3 },
@@ -15,9 +16,8 @@ const LEVELS = {
 export { LEVELS };
 
 export function generateWorkout(userProfile, cycleInfo, assessmentResults, failureAdjustments = null) {
-  const { level, daysPerWeek } = userProfile;
+  const { level } = userProfile;
   const { cycle, config, microCycleDay } = cycleInfo;
-  const levelConfig = LEVELS[level] || LEVELS[1];
 
   // Off cycle — no workout
   if (cycle === 'off') {
@@ -30,26 +30,11 @@ export function generateWorkout(userProfile, cycleInfo, assessmentResults, failu
 
   const intensity = getCycleIntensity(config, microCycleDay);
   const availableExercises = getExercisesForLevel(level);
-  const availableHolds = getHoldsByDifficultyRange(1, levelConfig.maxHoldDifficulty);
 
-  // Calculate hang time and reps based on assessment, cycle, and intensity
-  const maxHangTime = assessmentResults?.maxHangTime || levelConfig.baseHangTime;
-  const hangTime = Math.round(maxHangTime * intensity * config.hangTimeMultiplier);
-  const restTime = Math.max(hangTime, 10); // rest at least as long as hang
+  // Build exercise sequence from official Metolius 10-minute sequences
+  const exercises = buildSequenceWorkout(level, availableExercises, intensity, cycle);
 
-  const baseReps = assessmentResults?.maxRepeaterReps || levelConfig.baseReps;
-  const reps = Math.max(1, Math.round(baseReps * intensity * config.repsMultiplier));
-
-  // Select holds appropriate for the workout
-  const workoutHolds = selectHoldsForWorkout(availableHolds, intensity, level);
-
-  // Build exercise sequence based on cycle type
-  const exercises = buildExerciseSequence(
-    cycle, microCycleDay, availableExercises, workoutHolds,
-    hangTime, restTime, reps, intensity, level
-  );
-
-  // Expand one-handed holds into separate L/R exercises
+  // Expand one-handed holds (and oneArm sequence exercises) into separate L/R exercises
   const expandedExercises = expandOneHandedExercises(exercises);
 
   // Apply failure adjustments to reduce difficulty where user has struggled
@@ -61,22 +46,24 @@ export function generateWorkout(userProfile, cycleInfo, assessmentResults, failu
     type: cycle,
     microCycleDay,
     intensity: Math.round(intensity * 100),
+    sequenceLevel: level >= 3 ? 'Advanced' : level >= 2 ? 'Intermediate' : 'Entry Level',
     warmUpMinutes: 15,
     coolDownMinutes: 15,
     exercises: adjustedExercises,
     totalSets: adjustedExercises.reduce((sum, e) => sum + (e.sets || 1), 0),
-    estimatedMinutes: estimateWorkoutDuration(adjustedExercises),
+    estimatedMinutes: 10 + 30, // 10-min sequence + warm-up/cool-down
   };
 }
 
-// For one-handed holds, duplicate the exercise: once for right hand, once for left
+// For one-handed holds (or oneArm sequence exercises), duplicate: once R, once L
 // Also annotates with the user's current band assistance level
 function expandOneHandedExercises(exercises) {
   const bandAssistance = getBandAssistance() || defaultBandAssistance();
   const expanded = [];
   for (const ex of exercises) {
     const hold = getHoldById(ex.holdId);
-    if (hold?.oneHanded) {
+    const isOneArm = hold?.oneHanded || ex.oneArm;
+    if (isOneArm) {
       for (const hand of ['right', 'left']) {
         const bandLevel = bandAssistance[hand] || 'none';
         const bandConfig = getBandConfig(bandLevel);
@@ -89,7 +76,9 @@ function expandOneHandedExercises(exercises) {
           bandConfig,
           notes: needsBand
             ? `${hand.toUpperCase()} hand — ${bandConfig.label}: ${bandConfig.description}`
-            : `${hand.toUpperCase()} hand — unassisted`,
+            : ex.notes
+              ? `${ex.notes} — ${hand.toUpperCase()} hand`
+              : `${hand.toUpperCase()} hand`,
           hangTime: needsBand
             ? Math.max(ex.hangTime || 10, bandConfig.targetHangTime)
             : ex.hangTime,
@@ -102,205 +91,69 @@ function expandOneHandedExercises(exercises) {
   return expanded;
 }
 
-function selectHoldsForWorkout(holds, intensity, level) {
-  // Sort by difficulty, pick holds matching intensity
-  const sorted = [...holds].sort((a, b) => a.difficulty - b.difficulty);
-  const targetDifficulty = Math.ceil(sorted.length * intensity);
+// Intensity multipliers per cycle — scale hang times from the official sequence
+const CYCLE_HANG_MULTIPLIERS = {
+  conditioning: 0.70,  // 60-70% — build base, longer rests
+  load:         0.85,  // 70-85% — volume phase
+  recovery:     0.50,  // 50%    — active recovery
+  peak:         1.00,  // 80-100% — max intensity
+};
 
-  // Always include an easy two-handed hold for warm-up (never one-handed center holds)
-  const easyHold = sorted.find(h => !h.oneHanded) || sorted[0];
-  const workHolds = sorted.slice(
-    Math.max(0, targetDifficulty - 3),
-    Math.min(sorted.length, targetDifficulty + 1)
-  );
+// Convert one sequence minute into a workout exercise object
+function sequenceMinuteToExercise(minute, allExercises, intensityMultiplier) {
+  const primaryHoldId = minute.holdIds[0] || 1; // fallback to outer jug
+  const primaryHold = getHoldById(primaryHoldId);
 
-  // Deduplicate and ensure variety
-  const selected = [easyHold, ...workHolds];
-  const unique = [...new Map(selected.map(h => [h.id, h])).values()];
-  return unique.slice(0, 5);
+  // Scale hang time by intensity; to-failure exercises get a generous default
+  const baseDuration = minute.duration || (minute.toFailure ? 30 : 0);
+  const hangTime = baseDuration > 0
+    ? Math.max(5, Math.round(baseDuration * intensityMultiplier))
+    : 0;
+
+  // Scale pull-up count (min 1 if specified)
+  const reps = minute.pullUps
+    ? Math.max(1, Math.round(minute.pullUps * intensityMultiplier))
+    : (hangTime > 0 ? 1 : 1);
+
+  // Rest = remainder of the minute, minimum 15s
+  const restTime = Math.max(15, 60 - hangTime);
+
+  const exercise = allExercises.find(e => e.id === minute.exerciseId)
+    || allExercises.find(e => e.id === 'dead_hang');
+
+  // Build hold name: show all holds involved for offset/multi-hold exercises
+  const holdNames = minute.holdIds
+    .map(id => getHoldById(id)?.name || `#${id}`)
+    .join(' & ');
+
+  const toFailureNote = minute.toFailure ? ' — hang to failure' : '';
+  const extraNote = minute.notes ? ` | ${minute.notes}` : '';
+
+  return {
+    exercise,
+    holdId: primaryHoldId,
+    altHoldIds: minute.holdIds.slice(1),
+    holdName: holdNames,
+    hangTime,
+    restTime,
+    sets: 1,
+    reps,
+    minuteNum: minute.min,
+    toFailure: minute.toFailure || false,
+    oneArm: minute.oneArm || false,
+    notes: minute.description + toFailureNote + extraNote,
+  };
 }
 
-function buildExerciseSequence(cycle, microDay, exercises, holds, hangTime, restTime, reps, intensity, level) {
-  const sequence = [];
-  // Never use one-handed (center) holds for warm-up
-  const warmUpHold = holds.find(h => !h.oneHanded) || holds[0];
+// Build workout from the official Metolius 10-minute sequence for the user's level
+function buildSequenceWorkout(level, allExercises, intensity, cycle) {
+  const sequenceKey = level >= 3 ? 'advanced' : level >= 2 ? 'intermediate' : 'entry';
+  const sequence = TEN_MINUTE_SEQUENCES[sequenceKey];
+  const multiplier = CYCLE_HANG_MULTIPLIERS[cycle] ?? intensity;
 
-  // Warm-up: always start with easy dead hangs
-  sequence.push({
-    exercise: exercises.find(e => e.id === 'dead_hang'),
-    holdId: warmUpHold.id,
-    holdName: warmUpHold.name,
-    hangTime: Math.round(hangTime * 0.5),
-    restTime: 15,
-    sets: 2,
-    reps: 1,
-    isWarmUp: true,
-    notes: 'Warm-up: easy dead hangs on jugs',
-  });
-
-  if (cycle === 'conditioning') {
-    // Long hangs, many reps, moderate holds
-    holds.slice(0, 3).forEach(hold => {
-      sequence.push({
-        exercise: exercises.find(e => e.id === 'dead_hang'),
-        holdId: hold.id,
-        holdName: hold.name,
-        hangTime,
-        restTime,
-        sets: 3,
-        reps: 1,
-        notes: `Dead hang at ${Math.round(intensity * 100)}% effort`,
-      });
-    });
-
-    if (level >= 2) {
-      sequence.push({
-        exercise: exercises.find(e => e.id === 'bent_arm_hang'),
-        holdId: holds[0].id,
-        holdName: holds[0].name,
-        hangTime: Math.round(hangTime * 0.8),
-        restTime,
-        sets: 2,
-        reps: 1,
-        notes: 'Bent arm hang at 90°',
-      });
-    }
-
-    // Repeaters for endurance
-    sequence.push({
-      exercise: exercises.find(e => e.id === 'repeaters'),
-      holdId: holds[1]?.id || holds[0].id,
-      holdName: holds[1]?.name || holds[0].name,
-      hangTime: 7,
-      restTime: 3,
-      sets: 2,
-      reps: Math.max(3, reps),
-      notes: '7s on / 3s off repeaters',
-    });
-
-  } else if (cycle === 'load') {
-    // High volume, varied exercises
-    const mainHolds = holds.slice(1);
-    mainHolds.forEach((hold, i) => {
-      sequence.push({
-        exercise: exercises.find(e => e.id === 'dead_hang'),
-        holdId: hold.id,
-        holdName: hold.name,
-        hangTime,
-        restTime,
-        sets: microDay === 'hard' ? 4 : microDay === 'moderate' ? 3 : 2,
-        reps: 1,
-        notes: `${microDay} day dead hang`,
-      });
-    });
-
-    // Repeaters
-    sequence.push({
-      exercise: exercises.find(e => e.id === 'repeaters'),
-      holdId: mainHolds[0]?.id || holds[0].id,
-      holdName: mainHolds[0]?.name || holds[0].name,
-      hangTime: 7,
-      restTime: 3,
-      sets: microDay === 'hard' ? 4 : 3,
-      reps: Math.max(4, reps),
-      notes: '7s on / 3s off repeaters — endurance focus',
-    });
-
-    if (level >= 2) {
-      sequence.push({
-        exercise: exercises.find(e => e.id === 'pull_up'),
-        holdId: holds[0].id,
-        holdName: holds[0].name,
-        hangTime: 0,
-        restTime: 60,
-        sets: 3,
-        reps: Math.max(3, Math.round(reps * 0.8)),
-        notes: 'Controlled pull-ups — perfect form',
-      });
-    }
-
-    // Core work
-    if (level >= 2) {
-      sequence.push({
-        exercise: exercises.find(e => e.id === 'l_hang'),
-        holdId: holds[0].id,
-        holdName: holds[0].name,
-        hangTime: Math.round(hangTime * 0.7),
-        restTime: 30,
-        sets: 2,
-        reps: 1,
-        notes: 'L-hang for core strength',
-      });
-    }
-
-  } else if (cycle === 'recovery') {
-    // Low volume, easy holds
-    sequence.push({
-      exercise: exercises.find(e => e.id === 'dead_hang'),
-      holdId: holds[0].id,
-      holdName: holds[0].name,
-      hangTime: Math.round(hangTime * 0.6),
-      restTime: restTime * 1.5,
-      sets: 2,
-      reps: 1,
-      notes: 'Light dead hangs — recovery focus',
-    });
-
-    sequence.push({
-      exercise: exercises.find(e => e.id === 'repeaters'),
-      holdId: holds[0].id,
-      holdName: holds[0].name,
-      hangTime: 5,
-      restTime: 5,
-      sets: 2,
-      reps: 3,
-      notes: 'Light repeaters — keep blood flowing',
-    });
-
-  } else if (cycle === 'peak') {
-    // High intensity, low volume, harder holds
-    const hardHolds = holds.slice(-3);
-    hardHolds.forEach(hold => {
-      sequence.push({
-        exercise: exercises.find(e => e.id === 'dead_hang'),
-        holdId: hold.id,
-        holdName: hold.name,
-        hangTime: Math.round(hangTime * 0.7),
-        restTime: restTime * 2,
-        sets: microDay === 'hard' ? 3 : 2,
-        reps: 1,
-        notes: `Peak intensity dead hang — ${microDay} day. Add weight if hang > 12s.`,
-      });
-    });
-
-    if (level >= 2) {
-      sequence.push({
-        exercise: exercises.find(e => e.id === 'pull_up'),
-        holdId: hardHolds[0]?.id || holds[0].id,
-        holdName: hardHolds[0]?.name || holds[0].name,
-        hangTime: 0,
-        restTime: 90,
-        sets: 3,
-        reps: Math.max(2, Math.round(reps * 0.5)),
-        notes: 'Max effort pull-ups on smaller holds',
-      });
-    }
-
-    if (level >= 3) {
-      sequence.push({
-        exercise: exercises.find(e => e.id === 'offset_pull_up'),
-        holdId: holds[0].id,
-        holdName: holds[0].name,
-        hangTime: 0,
-        restTime: 120,
-        sets: 2,
-        reps: 3,
-        notes: 'Offset pull-ups — one arm emphasis',
-      });
-    }
-  }
-
-  return sequence;
+  return sequence.minutes.map(minute =>
+    sequenceMinuteToExercise(minute, allExercises, multiplier)
+  );
 }
 
 function estimateWorkoutDuration(exercises) {
