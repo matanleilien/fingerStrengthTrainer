@@ -31,8 +31,13 @@ export function generateWorkout(userProfile, cycleInfo, assessmentResults, failu
   const intensity = getCycleIntensity(config, microCycleDay);
   const availableExercises = getExercisesForLevel(level);
 
+  // Warmup: 3 easy dead hangs on two-handed holds, per Metolius guide ("ridiculously easy")
+  const warmupExercises = buildWarmup(availableExercises);
+
   // Build exercise sequence from official Metolius 10-minute sequences
-  const exercises = buildSequenceWorkout(level, availableExercises, intensity, cycle);
+  const sequenceExercises = buildSequenceWorkout(level, availableExercises, intensity, cycle);
+
+  const exercises = [...warmupExercises, ...sequenceExercises];
 
   // Expand one-handed holds (and oneArm sequence exercises) into separate L/R exercises
   const expandedExercises = expandOneHandedExercises(exercises);
@@ -146,6 +151,50 @@ function sequenceMinuteToExercise(minute, allExercises, intensityMultiplier) {
 }
 
 // Build workout from the official Metolius 10-minute sequence for the user's level
+// Warmup: 3 progressively harder dead hangs on easy two-handed holds
+// Per Metolius guide: "ridiculously easy — easy pull-ups and dead hangs, gentle stretching"
+function buildWarmup(allExercises) {
+  const deadHang = allExercises.find(e => e.id === 'dead_hang');
+  return [
+    {
+      exercise: deadHang,
+      holdId: 1,
+      altHoldIds: [],
+      holdName: '#1 Outer Jugs',
+      hangTime: 10,
+      restTime: 20,
+      sets: 1,
+      reps: 1,
+      isWarmUp: true,
+      notes: 'Warm-up: dead easy hang — just get blood flowing. Open-hand grip.',
+    },
+    {
+      exercise: deadHang,
+      holdId: 7,
+      altHoldIds: [],
+      holdName: '#7 Edges (36mm)',
+      hangTime: 10,
+      restTime: 20,
+      sets: 1,
+      reps: 1,
+      isWarmUp: true,
+      notes: 'Warm-up: easy edge hang. Slight elbow bend, stay relaxed.',
+    },
+    {
+      exercise: deadHang,
+      holdId: 2,
+      altHoldIds: [],
+      holdName: '#2 Flat Slopers (55mm)',
+      hangTime: 10,
+      restTime: 20,
+      sets: 1,
+      reps: 1,
+      isWarmUp: true,
+      notes: 'Warm-up: easy sloper hang. Open hand, roll shoulders back.',
+    },
+  ];
+}
+
 function buildSequenceWorkout(level, allExercises, intensity, cycle) {
   const sequenceKey = level >= 3 ? 'advanced' : level >= 2 ? 'intermediate' : 'entry';
   const sequence = TEN_MINUTE_SEQUENCES[sequenceKey];
