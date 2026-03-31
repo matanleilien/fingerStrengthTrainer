@@ -242,11 +242,56 @@ export function saveBandAssistance(bandAssistance) {
   set('band_assistance', bandAssistance);
 }
 
+// --- Personal Records ---
+export function getPersonalRecords() {
+  return get('personal_records', {});
+}
+
+export function savePersonalRecords(records) {
+  set('personal_records', records);
+}
+
+/**
+ * Check if the given result beats the stored record for this exercise.
+ * Saves the record if it's new or better.
+ * Returns true only if a PREVIOUS record was beaten (triggers celebration).
+ */
+export function checkAndUpdatePersonalRecord(holdId, exerciseId, hand, hangTime, reps, holdName, exerciseName) {
+  const records = getPersonalRecords();
+  const key = `${holdId}_${exerciseId}_${hand || 'both'}`;
+  const existing = records[key];
+
+  const currentBestTime = existing?.bestHangTime || 0;
+  const currentBestReps = existing?.bestReps || 0;
+
+  const isBetter =
+    (hangTime > 0 && hangTime > currentBestTime) ||
+    (reps > 1 && reps > currentBestReps);
+
+  if (isBetter || !existing) {
+    records[key] = {
+      holdId,
+      exerciseId,
+      hand: hand || 'both',
+      holdName,
+      exerciseName,
+      bestHangTime: Math.max(hangTime || 0, currentBestTime),
+      bestReps: Math.max(reps || 0, currentBestReps),
+      date: new Date().toISOString(),
+    };
+    savePersonalRecords(records);
+  }
+
+  // Only celebrate when beating an existing record (not on first attempt)
+  return isBetter && !!existing;
+}
+
 // --- Full Reset ---
 export function resetAllData() {
   const keys = [
     'profile', 'assessment', 'assessment_history', 'training_state',
     'workout_history', 'next_assessment', 'failure_adjustments', 'goals',
+    'personal_records',
   ];
   keys.forEach(k => remove(k));
 }

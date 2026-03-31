@@ -7,6 +7,7 @@ import {
   deleteWorkoutHistoryItem,
   getBandAssistance,
   saveBandAssistance,
+  getPersonalRecords,
 } from '../utils/storage';
 import { getProgressPercent, getSkillStatus } from '../utils/goalGenerator';
 import { formatWorkoutSummary, formatAssessmentSummary, copyToClipboard } from '../utils/share';
@@ -19,6 +20,7 @@ export default function Progress({ onBack }) {
   const goals = getGoals();
   const [copiedId, setCopiedId] = useState(null);
   const [bandAssistance, setBandAssistance] = useState(() => getBandAssistance());
+  const [personalRecords] = useState(() => getPersonalRecords());
   const [expandedIndex, setExpandedIndex] = useState(null); // actual array index
   const [editingIndex, setEditingIndex] = useState(null);
   const [editData, setEditData] = useState(null);
@@ -201,6 +203,35 @@ export default function Progress({ onBack }) {
         </div>
       )}
 
+      {/* Personal Records */}
+      {Object.keys(personalRecords).length > 0 && (
+        <div className="section">
+          <h3>&#127942; Personal Records</h3>
+          <div className="pr-grid">
+            {Object.values(personalRecords)
+              .sort((a, b) => new Date(b.date) - new Date(a.date))
+              .map((rec, i) => (
+                <div key={i} className="pr-record-card">
+                  <div className="pr-record-header">
+                    <span className="pr-record-exercise">{rec.exerciseName}</span>
+                    {rec.hand && rec.hand !== 'both' && (
+                      <span className={`ex-hand ${rec.hand}`}>{rec.hand === 'right' ? 'R' : 'L'}</span>
+                    )}
+                  </div>
+                  <div className="pr-record-hold">{rec.holdName}</div>
+                  <div className="pr-record-value">
+                    {rec.bestHangTime > 0 && <span>{rec.bestHangTime}s</span>}
+                    {rec.bestReps > 1 && <span>{rec.bestReps} reps</span>}
+                  </div>
+                  <div className="pr-record-date">
+                    {new Date(rec.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {/* Goals & Expected Progress */}
       {goals && Object.keys(goals.skills).length > 0 && (
         <div className="section">
@@ -365,6 +396,7 @@ export default function Progress({ onBack }) {
                     <div className="log-intensity">{w.intensity}%</div>
                     <div className="log-exercises">
                       {w.completedCount}/{w.exerciseCount}
+                      {w.prCount > 0 && <span className="log-pr-badge">&#127942;{w.prCount}</span>}
                     </div>
                     <span className={`log-chevron ${isExpanded ? 'open' : ''}`}>&#9662;</span>
                   </div>
@@ -415,6 +447,7 @@ export default function Progress({ onBack }) {
                                   {ex.name}
                                   {ex.hand && <span className={`ex-hand ${ex.hand}`}>{ex.hand === 'right' ? 'R' : 'L'}</span>}
                                   {ex.isWarmUp && <span className="ex-warmup-tag">warm-up</span>}
+                                  {ex.isPR && <span className="ex-pr-tag">&#127942; PR</span>}
                                 </div>
                                 <div className="ex-hold">{ex.holdName}</div>
                               </div>

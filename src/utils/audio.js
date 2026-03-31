@@ -68,6 +68,22 @@ export function beepRecord() {
   setTimeout(() => playTone(1000, 0.05, 'sine', 0.3), 100);
 }
 
+// Personal Record trumpet fanfare — ascending victory melody
+export function beepTrumpet() {
+  const seq = [
+    { f: 523, d: 0,    dur: 0.12 }, // C
+    { f: 523, d: 130,  dur: 0.12 }, // C
+    { f: 523, d: 260,  dur: 0.12 }, // C
+    { f: 523, d: 390,  dur: 0.22 }, // C (hold)
+    { f: 415, d: 390,  dur: 0.22 }, // Ab (harmony)
+    { f: 523, d: 640,  dur: 0.14 }, // C
+    { f: 587, d: 810,  dur: 0.14 }, // D
+    { f: 659, d: 970,  dur: 0.14 }, // E
+    { f: 784, d: 1120, dur: 0.55 }, // G (triumphant hold)
+  ];
+  seq.forEach(({ f, d, dur }) => setTimeout(() => playTone(f, dur, 'square', 0.3), d));
+}
+
 // Initialize audio context on first user interaction
 export function initAudio() {
   getAudioContext();

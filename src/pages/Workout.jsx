@@ -2,8 +2,8 @@ import { useState, useRef } from 'react';
 import Fingerboard from '../components/Fingerboard';
 import TimerDisplay from '../components/TimerDisplay';
 import { useTimer } from '../utils/useTimer';
-import { beepGo, beepRest, beepTick, beepWarning, beepComplete } from '../utils/audio';
-import { appendWorkoutHistory } from '../utils/storage';
+import { beepGo, beepRest, beepTick, beepWarning, beepComplete, beepTrumpet } from '../utils/audio';
+import { appendWorkoutHistory, checkAndUpdatePersonalRecord } from '../utils/storage';
 import { processWorkoutResults } from '../utils/failureAdjustment';
 import { getHoldById } from '../data/holds';
 import { formatFullWorkoutDetail, copyToClipboard } from '../utils/share';
@@ -18,6 +18,7 @@ export default function Workout({ workout, onComplete, onCancel }) {
   const [isPaused, setIsPaused] = useState(false);
   const [completedExercises, setCompletedExercises] = useState([]);
   const [exerciseResults, setExerciseResults] = useState([]);
+  const [prBroken, setPrBroken] = useState(null); // { holdName, exerciseName, value, unit }
 
   const exercises = workout.exercises || [];
   const currentExercise = exercises[exIndex];
@@ -126,10 +127,29 @@ export default function Workout({ workout, onComplete, onCancel }) {
       setPhase('set_rest');
       restTimer.start(Math.round((currentExercise.restTime || 30) * 1.5));
     } else {
-      recordExerciseResult('completed');
+      const isPR = checkAndUpdatePersonalRecord(
+        currentExercise.holdId,
+        currentExercise.exercise?.id || 'dead_hang',
+        currentExercise.hand || null,
+        currentExercise.hangTime || 0,
+        currentExercise.reps || 1,
+        currentExercise.holdName,
+        currentExercise.exercise?.name || 'Exercise',
+      );
+      recordExerciseResult('completed', isPR);
       setCompletedExercises(prev => [...prev, exIndex]);
       setPhase('exercise_done');
-      beepComplete();
+      if (isPR) {
+        beepTrumpet();
+        setPrBroken({
+          holdName: currentExercise.holdName,
+          exerciseName: currentExercise.exercise?.name || 'Exercise',
+          value: currentExercise.hangTime > 0 ? currentExercise.hangTime : currentExercise.reps,
+          unit: currentExercise.hangTime > 0 ? 's' : ' reps',
+        });
+      } else {
+        beepComplete();
+      }
     }
   }
 
@@ -146,11 +166,12 @@ export default function Workout({ workout, onComplete, onCancel }) {
     beepRest();
   }
 
-  function recordExerciseResult(status) {
+  function recordExerciseResult(status, isPR = false) {
     const hold = getHoldById(currentExercise.holdId);
     setExerciseResults(prev => [...prev, {
       exIndex,
       status,
+      isPR,
       holdId: currentExercise.holdId,
       holdType: hold?.type || 'unknown',
       hand: currentExercise.hand || null,
@@ -228,6 +249,7 @@ export default function Workout({ workout, onComplete, onCancel }) {
       exerciseCount: totalExercises,
       completedCount: allResults.filter(r => r.status === 'completed').length,
       failedCount: allResults.filter(r => r.status === 'failed').length,
+      prCount: allResults.filter(r => r.isPR).length,
       exercises: exercises.map((ex, i) => {
         const result = allResults.find(r => r.exIndex === i);
         return {
@@ -240,7 +262,8 @@ export default function Workout({ workout, onComplete, onCancel }) {
           hangTime: ex.hangTime || 0,
           restTime: ex.restTime || 0,
           isWarmUp: ex.isWarmUp || false,
-          status: result?.status || 'completed',
+          status: result?.status || 'skipped',
+          isPR: result?.isPR || false,
           failedAtSet: result?.failedAtSet ?? null,
           failedAtRep: result?.failedAtRep ?? null,
         };
@@ -282,6 +305,9 @@ export default function Workout({ workout, onComplete, onCancel }) {
             {workout.type} cycle — {workout.microCycleDay || ''} day
           </p>
           <p>{completedExercises.length + 1} / {totalExercises} exercises completed</p>
+          {exerciseResults.filter(r => r.isPR).length > 0 && (
+            <p className="complete-prs">&#127942; {exerciseResults.filter(r => r.isPR).length} personal record{exerciseResults.filter(r => r.isPR).length > 1 ? 's' : ''} broken!</p>
+          )}
           <button className="btn-share" onClick={handleShare}>
             {copied ? 'Copied!' : 'Share Workout'}
           </button>
@@ -529,6 +555,22 @@ export default function Workout({ workout, onComplete, onCancel }) {
           Finish Workout
         </button>
       </div>
+
+      {/* PR celebration overlay */}
+      {prBroken && (
+        <div className="pr-overlay">
+          <div className="pr-content">
+            <div className="pr-trophy">&#127942;</div>
+            <h2 className="pr-title">Personal Record!</h2>
+            <p className="pr-exercise-name">{prBroken.exerciseName}</p>
+            <p className="pr-hold-name">{prBroken.holdName}</p>
+            <p className="pr-value-display">{prBroken.value}{prBroken.unit}</p>
+            <button className="btn-primary btn-pr-dismiss" onClick={() => setPrBroken(null)}>
+              Awesome!
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Pause overlay */}
       {isPaused && (
