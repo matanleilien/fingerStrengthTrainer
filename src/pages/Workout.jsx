@@ -432,7 +432,7 @@ export default function Workout({ workout, onComplete, onCancel }) {
                 <span className="info-value">{currentExercise.sets || 1}</span>
                 <span className="info-label">Sets</span>
               </div>
-              {currentExercise.hangTime === 0 && currentExercise.reps > 1 && (
+              {currentExercise.reps > 1 && (
                 <div className="info-item">
                   <span className="info-value">{currentExercise.reps}</span>
                   <span className="info-label">Reps</span>
