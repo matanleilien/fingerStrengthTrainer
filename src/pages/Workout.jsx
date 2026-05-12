@@ -61,6 +61,22 @@ export default function Workout({ workout, onComplete, onCancel }) {
     }
   );
 
+  const exerciseRestTimer = useTimer(
+    (t) => { if (t <= 3 && t > 0) beepTick(); },
+    () => {
+      beepGo();
+      const next = exIndex + 1;
+      if (next >= totalExercises) {
+        finishWorkout();
+      } else {
+        setExIndex(next);
+        setSetNum(0);
+        setRepNum(0);
+        setPhase('overview');
+      }
+    }
+  );
+
   const [repeaterRep, setRepeaterRep] = useState(0);
   const [repeaterPhase, setRepeaterPhase] = useState('hang');
 
@@ -199,14 +215,12 @@ export default function Workout({ workout, onComplete, onCancel }) {
   }
 
   function handleNextExercise() {
-    const next = exIndex + 1;
-    if (next >= totalExercises) {
+    const nextEx = exercises[exIndex + 1];
+    if (!nextEx) {
       finishWorkout();
     } else {
-      setExIndex(next);
-      setSetNum(0);
-      setRepNum(0);
-      setPhase('overview');
+      setPhase('exercise_rest');
+      exerciseRestTimer.start(nextEx.restTime || 30);
     }
   }
 
@@ -547,6 +561,34 @@ export default function Workout({ workout, onComplete, onCancel }) {
             </div>
           );
         })()}
+
+        {/* Exercise rest timer */}
+        {phase === 'exercise_rest' && (
+          <>
+            <TimerDisplay
+              timeLeft={exerciseRestTimer.timeLeft}
+              totalTime={exercises[exIndex + 1]?.restTime || 30}
+              label="Rest Before Next"
+              isRest
+              large
+            />
+            <button className="btn-secondary" onClick={() => {
+              exerciseRestTimer.stop();
+              beepGo();
+              const next = exIndex + 1;
+              if (next >= totalExercises) {
+                finishWorkout();
+              } else {
+                setExIndex(next);
+                setSetNum(0);
+                setRepNum(0);
+                setPhase('overview');
+              }
+            }}>
+              Skip Rest
+            </button>
+          </>
+        )}
       </div>
 
       {/* Finish workout button — always accessible */}
