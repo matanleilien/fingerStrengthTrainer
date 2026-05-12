@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:rockrun.com)"
+      "WebFetch(domain:rockrun.com)",
+      "WebFetch(domain:www.metoliusclimbing.com)",
+      "WebFetch(domain:cdn.shopify.com)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
